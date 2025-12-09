@@ -76,13 +76,24 @@ def embed_text(texts: List[str]) -> np.ndarray:
 
 def recommend(query: str, items: List[str], embeddings: np.ndarray, top_k: int = 5) -> List[Tuple[str, float]]:
     """
-    Retourne top_k items (BlockID) les plus proches du query avec scores (cosine).
-    Score dans [0,1] (1 = identique).
+    Retourne top_k items (BlockID) les plus proches du query avec scores pondérés.
+    Si weights est fourni (dict {item: poids}), le score est pondéré.
+    """
+    return recommend_weighted(query, items, embeddings, top_k=top_k)
+
+def recommend_weighted(query: str, items: List[str], embeddings: np.ndarray, top_k: int = 3, weights: Optional[dict] = None) -> List[Tuple[str, float]]:
+    """
+    Recommandation avec score pondéré : score = similarité_cosinus * poids (si fourni)
+    Si weights n'est pas fourni, score = similarité cosinus.
     """
     q_emb = embed_text([query])
     sims = cosine_similarity(q_emb, embeddings)[0]
-    idx = np.argsort(sims)[::-1][:top_k]
-    return [(items[i], float(sims[i])) for i in idx]
+    scores = []
+    for i, item in enumerate(items):
+        weight = weights[item] if weights and item in weights else 1.0
+        scores.append((item, float(sims[i]) * weight))
+    scores.sort(key=lambda x: x[1], reverse=True)
+    return scores[:top_k]
 
 if __name__ == "__main__":
     # démonstration rapide (Windows: python .\src\services\referentiel.py)
