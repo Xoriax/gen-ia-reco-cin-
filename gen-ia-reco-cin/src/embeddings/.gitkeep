@@ -1,0 +1,1 @@
+Bien sûr ! Je serais ravi de vous aider avec des recommandations cinématographiques. Quel genre de films aimez-vous ? Préférez-vous des films récents ou des classiques ? Avez-vous des thèmes ou des réalisateurs en tête ?
