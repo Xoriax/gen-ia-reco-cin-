@@ -103,14 +103,6 @@ gen-ia-reco-cin/
 - pandas 2.1.3 (manipulation de données)
 - numpy 1.24.3 (calculs numériques)
 
-## Documentation
-
-Consultez [DOCUMENTATION_RECOMMENDER.md](DOCUMENTATION_RECOMMENDER.md) pour :
-- Guide d'utilisation détaillé
-- Exemples de scénarios
-- Architecture technique
-- API de programmation
-
 ## Résultats Exemple
 
 **Requête :**
