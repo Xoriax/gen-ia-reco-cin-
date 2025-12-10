@@ -289,12 +289,12 @@ def recommend_movies(
     for idx in top_indices:
         row = df_filtered.iloc[idx]
         recommendations.append({
-            "titre": row.get('Film', ''),
-            "année": row.get('Année', ''),
-            "catégorie": row.get('Catégorie', ''),
-            "genre": row.get('Genre', ''),
-            "blockid": row.get('BlockID', ''),
-            "description": row.get('Description narrative', ''),
+            "titre": str(row.get('Film', '')),
+            "année": int(row.get('Année', 0)),
+            "catégorie": str(row.get('Catégorie', '')),
+            "genre": str(row.get('Genre', '')),
+            "blockid": str(row.get('BlockID', '')),
+            "description": str(row.get('Description narrative', '')),
             "score": float(sims[idx])
         })
     

@@ -1,18 +1,18 @@
-# 🎬 Système de Recommandation Cinématographique par IA
+# Système de Recommandation Cinématographique par IA
 
 ## Description
 Système de recommandation intelligent de films et séries TV utilisant l'IA générative et les embeddings sémantiques. Le système analyse les préférences utilisateur via un questionnaire multi-critères et propose des recommandations personnalisées.
 
-## 🌟 Fonctionnalités
+## Fonctionnalités
 
-### ✅ Implémenté (EF2.2, EF2.3, EF3.1, EF3.2)
-- **Modélisation sémantique** avec SBERT (SentenceTransformer)
-- **Mesure de similarité cosinus** pour comparer les préférences
-- **Formule de score pondérée** pour la couverture/affinité sémantique
-- **Top 3-5 recommandations** avec scores détaillés
-- **Recommandations de titres spécifiques** (films/TV shows)
+### Implémenté (EF2.2, EF2.3, EF3.1, EF3.2)
+- Modélisation sémantique avec SBERT (SentenceTransformer)
+- Mesure de similarité cosinus pour comparer les préférences
+- Formule de score pondérée pour la couverture/affinité sémantique
+- Top 3-5 recommandations avec scores détaillés
+- Recommandations de titres spécifiques (films/TV shows)
 
-### 🎯 Critères de Recherche
+### Critères de Recherche
 
 #### 1. Description Libre
 Décrivez en langage naturel le type de film recherché.
@@ -29,7 +29,7 @@ Donnez un titre de film similaire pour affiner les résultats.
 #### 4. Filtrage Temporel
 6 périodes disponibles (2020+, 2015-2020, 2010-2015, 2000-2010, 1980-2000, <1980)
 
-## 🚀 Démarrage Rapide
+## Démarrage Rapide
 
 ### Installation
 ```bash
@@ -60,7 +60,7 @@ recommendations = recommend_movies(
 )
 ```
 
-## 📊 Tests
+## Tests
 
 ### Tests Complets
 ```bash
@@ -72,7 +72,7 @@ python test_movie_recommender.py
 python -m pytest tests/test_referentiel.py -v
 ```
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 gen-ia-reco-cin/
@@ -95,15 +95,15 @@ gen-ia-reco-cin/
 └── README.md
 ```
 
-## 🔧 Technologies
+## Technologies
 
-- **Python** 3.11+
-- **SentenceTransformers** 2.7.0 (SBERT pour embeddings)
-- **scikit-learn** 1.3.2 (similarité cosinus)
-- **pandas** 2.1.3 (manipulation de données)
-- **numpy** 1.24.3 (calculs numériques)
+- Python 3.11+
+- SentenceTransformers 2.7.0 (SBERT pour embeddings)
+- scikit-learn 1.3.2 (similarité cosinus)
+- pandas 2.1.3 (manipulation de données)
+- numpy 1.24.3 (calculs numériques)
 
-## 📖 Documentation
+## Documentation
 
 Consultez [DOCUMENTATION_RECOMMENDER.md](DOCUMENTATION_RECOMMENDER.md) pour :
 - Guide d'utilisation détaillé
@@ -111,7 +111,7 @@ Consultez [DOCUMENTATION_RECOMMENDER.md](DOCUMENTATION_RECOMMENDER.md) pour :
 - Architecture technique
 - API de programmation
 
-## 🎯 Résultats Exemple
+## Résultats Exemple
 
 **Requête :**
 ```
@@ -124,14 +124,14 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 2. Pulp Fiction (1994) - Score: 0.3999
 3. Le Trou (1960) - Score: 0.4072
 
-## 📈 Performance
+## Performance
 
-- ⚡ **Temps de réponse** : ~100-200ms par requête
-- 📚 **Base de données** : 200 films/TV shows
-- 🎯 **Précision** : Embeddings 384 dimensions
-- 💾 **Mémoire** : ~50MB pour l'index
+- Temps de réponse : ~100-200ms par requête
+- Base de données : 200 films/TV shows
+- Précision : Embeddings 384 dimensions
+- Mémoire : ~50MB pour l'index
 
-## ✅ Conformité aux Exigences
+## Conformité aux Exigences
 
 | Exigence | Statut | Description |
 |----------|--------|-------------|
@@ -145,20 +145,8 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 | **Échelle Likert** | ✅ | 4 dimensions (1-5) |
 | **Filtrage temporel** | ✅ | 6 périodes disponibles |
 
-## 👥 Contribution
-
-Les contributions sont les bienvenues ! Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour les guidelines.
-
-## 📄 Licence
-
-MIT License - voir [LICENSE](LICENSE) pour plus de détails.
-
-## 📞 Contact
-
-Pour questions et support : ouvrir une issue sur GitHub
-
 ---
 
-**Version** : 1.0.0  
-**Date** : 9 décembre 2025  
-**Statut** : Production Ready
+Version : 1.0.0  
+Date : 9 décembre 2025  
+Statut : Production Ready

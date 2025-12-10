@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Recommandation de Films</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 Ciné Recommandation</h1>
+            <p>Trouvez le film parfait pour votre soirée</p>
+        </div>
+
+        <!-- Formulaire -->
+        <div class="form-container">
+            <form id="recommendationForm">
+                <!-- Description Libre -->
+                <div class="form-section">
+                    <h2>📝 Description Libre</h2>
+                    <label for="description">Décrivez en quelques phrases le type de film que vous avez envie de regarder maintenant :</label>
+                    <textarea 
+                        id="description" 
+                        name="description" 
+                        placeholder="Ex: Je veux un film dramatique intense avec du crime et du suspense..."
+                    ></textarea>
+                </div>
+
+                <!-- Preuve Contextuelle -->
+                <div class="form-section">
+                    <h2>🎬 Preuve Contextuelle</h2>
+                    <label for="similar_title">Donnez un titre de film similaire :</label>
+                    <input 
+                        type="text" 
+                        id="similar_title" 
+                        name="similar_title" 
+                        placeholder="Ex: The Shawshank Redemption"
+                    >
+                </div>
+
+                <!-- Échelle de Likert -->
+                <div class="form-section">
+                    <h2>📊 Échelle de Likert</h2>
+                    <p style="color: #666; margin-bottom: 20px;">
+                        <strong>Instruction :</strong> Sur une échelle de 1 à 5, évaluez votre intérêt actuel pour les éléments suivants :
+                    </p>
+
+                    <div class="likert-scale">
+                        <!-- Intensité de l'Action -->
+                        <div class="likert-item">
+                            <label for="action">⚡ Intensité de l'Action</label>
+                            <div class="scale-container">
+                                <span class="scale-label left">Calme/Contemplatif</span>
+                                <input type="range" id="action" name="action" min="1" max="5" value="3">
+                                <span class="scale-value">3</span>
+                                <span class="scale-label">Action pure/Explosif</span>
+                            </div>
+                        </div>
+
+                        <!-- Complexité Narrative -->
+                        <div class="likert-item">
+                            <label for="complexity">🧩 Complexité Narrative</label>
+                            <div class="scale-container">
+                                <span class="scale-label left">Linéaire/Simple</span>
+                                <input type="range" id="complexity" name="complexity" min="1" max="5" value="3">
+                                <span class="scale-value">3</span>
+                                <span class="scale-label">Puzzle mental/Complexe</span>
+                            </div>
+                        </div>
+
+                        <!-- Noirceur/Violence -->
+                        <div class="likert-item">
+                            <label for="darkness">🌑 Noirceur / Violence</label>
+                            <div class="scale-container">
+                                <span class="scale-label left">Familial/Léger</span>
+                                <input type="range" id="darkness" name="darkness" min="1" max="5" value="3">
+                                <span class="scale-value">3</span>
+                                <span class="scale-label">Sombre/Violent</span>
+                            </div>
+                        </div>
+
+                        <!-- Réalisme -->
+                        <div class="likert-item">
+                            <label for="realism">🎭 Réalisme</label>
+                            <div class="scale-container">
+                                <span class="scale-label left">Documentaire/Réel</span>
+                                <input type="range" id="realism" name="realism" min="1" max="5" value="3">
+                                <span class="scale-value">3</span>
+                                <span class="scale-label">Fantastique/Surréaliste</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Période -->
+                <div class="form-section">
+                    <h2>📅 Période</h2>
+                    <label>Sur quelle période le film que vous aimeriez regarder :</label>
+                    <div class="period-selector">
+                        <div class="period-option">
+                            <input type="radio" id="period1" name="period" value="present-2020">
+                            <label for="period1">Présent - 2020</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="period2" name="period" value="2020-2015">
+                            <label for="period2">2020 - 2015</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="period3" name="period" value="2015-2010">
+                            <label for="period3">2015 - 2010</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="period4" name="period" value="2010-2000">
+                            <label for="period4">2010 - 2000</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="period5" name="period" value="2000-1980">
+                            <label for="period5">2000 - 1980</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="period6" name="period" value="<1980">
+                            <label for="period6">< 1980</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">🔍 Trouver mes films</button>
+            </form>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader-container">
+            <div class="loader"></div>
+            <p class="loader-text">🎬 Recherche de vos films parfaits...</p>
+        </div>
+
+        <!-- Résultats -->
+        <div class="results-container">
+            <div class="results-header">
+                <h2>🎉 Vos Recommandations</h2>
+                <p style="color: #666;">Voici les films sélectionnés pour vous</p>
+            </div>
+            <div id="results-content"></div>
+            <button id="backBtn" class="back-btn">← Nouvelle recherche</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
