@@ -114,6 +114,9 @@ venv_test/
 venv_final/
 .venv-new/
 
+# EF4.1: Cache d'enrichissement Gemini
+.query_cache.json
+
 # Spyder project settings
 .spyderproject
 .spyproject

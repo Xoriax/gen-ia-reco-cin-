@@ -5,6 +5,7 @@ Prend en charge :
 - Titre similaire (preuve contextuelle)
 - Échelle de Likert (intensité, complexité, noirceur, réalisme)
 - Filtrage par période
+- EF4.1: Enrichissement automatique des requêtes courtes via Gemini AI
 """
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -13,6 +14,11 @@ from typing import List, Tuple, Optional, Dict
 import numpy as np
 import pickle
 import pandas as pd
+import sys
+
+# Import du module d'augmentation (EF4.1)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
+from query_augmentation import augment_query_with_gemini
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"
 _MODEL: Optional[SentenceTransformer] = None
@@ -216,7 +222,8 @@ def recommend_movies(
     realism: int = 3,
     period: str = None,
     top_k: int = 3,
-    use_weights: bool = True
+    use_weights: bool = True,
+    enable_augmentation: bool = True
 ) -> List[Dict]:
     """
     Recommande des films/TV shows spécifiques basés sur les critères utilisateur.
@@ -231,10 +238,15 @@ def recommend_movies(
         period: Période temporelle (ex: "present-2020", "2010-2000")
         top_k: Nombre de recommandations
         use_weights: Appliquer la pondération Likert
+        enable_augmentation: EF4.1 - Activer l'enrichissement automatique des requêtes courtes
     
     Returns:
         Liste de dictionnaires avec les recommandations
     """
+    # EF4.1 : Augmentation de la description si elle est trop courte
+    if description and enable_augmentation:
+        description = augment_query_with_gemini(description)
+    
     # Charger l'index
     df, embeddings = load_movie_index()
     
