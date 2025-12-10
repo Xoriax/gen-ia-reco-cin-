@@ -62,42 +62,63 @@ def test_augmentation_with_gemini():
     print("TEST 2 : Augmentation avec Gemini AI")
     print("="*80)
     
-    # Test avec requêtes courtes
-    test_queries = [
-        "action film",
+    # CAS 1 : Requêtes COURTES (< 5 mots) - DOIVENT être enrichies
+    print("\n📝 CAS 1 : Requêtes COURTES (< 5 mots) - Enrichissement OBLIGATOIRE :")
+    print("-" * 80)
+    
+    short_queries = [
         "comédie",
+        "action film",
+        "thriller sombre",
+        "animation japonaise"
     ]
     
-    print("\n📝 Test d'enrichissement de requêtes courtes :")
-    
-    for query in test_queries:
-        print(f"\n🔍 Test : '{query}'")
-        enriched = augment_query_with_gemini(query)
+    for query in short_queries:
         word_count_original = len(query.split())
+        print(f"\n🔍 Test : '{query}' ({word_count_original} mots < 5)")
+        
+        enriched = augment_query_with_gemini(query)
         word_count_enriched = len(enriched.split())
         
-        print(f"   Original ({word_count_original} mots) : {query}")
-        print(f"   Enrichie ({word_count_enriched} mots) : {enriched[:100]}...")
+        print(f"   📥 Entrée  : {query}")
+        print(f"   📤 Sortie  : {enriched}")
+        print(f"   📊 Longueur : {word_count_original} mots → {word_count_enriched} mots")
         
-        # La requête enrichie devrait être plus longue
-        if word_count_enriched > word_count_original:
-            print(f"   ✅ Enrichissement réussi")
+        # Vérifications de qualité
+        if word_count_enriched <= word_count_original:
+            print(f"   ❌ ÉCHEC : Pas d'enrichissement (vérifiez GEMINI_API_KEY)")
+        elif enriched.strip().startswith(query + " :") or enriched.strip() == query + " :":
+            print(f"   ❌ ÉCHEC : Enrichissement de mauvaise qualité (juste '{query} :')")
+        elif word_count_enriched >= word_count_original + 5:
+            print(f"   ✅ SUCCÈS : Enrichissement de qualité (+{word_count_enriched - word_count_original} mots)")
         else:
-            print(f"   ⚠️  Pas d'enrichissement (vérifiez GEMINI_API_KEY)")
+            print(f"   ⚠️  PARTIEL : Enrichissement minimal")
     
-    # Test avec requête longue (ne devrait pas être modifiée)
-    long_query = "Je veux un film dramatique intense avec du crime et du suspense"
-    print(f"\n📝 Test avec requête longue :")
-    print(f"   Entrée  : '{long_query}'")
+    # CAS 2 : Requêtes LONGUES (>= 5 mots) - NE DOIVENT PAS être enrichies
+    print("\n" + "="*80)
+    print("📝 CAS 2 : Requêtes LONGUES (>= 5 mots) - PAS d'enrichissement :")
+    print("-" * 80)
     
-    enriched = augment_query_with_gemini(long_query)
+    long_queries = [
+        "Je veux un film dramatique intense avec du crime",
+        "film d'action avec des explosions et des poursuites",
+        "comédie romantique légère pour soirée en famille"
+    ]
     
-    print(f"   Sortie  : '{enriched}'")
-    
-    if enriched == long_query:
-        print(f"   ✅ Requête longue non modifiée (correct)")
-    else:
-        print(f"   ⚠️  Requête modifiée (ne devrait pas l'être)")
+    for query in long_queries:
+        word_count = len(query.split())
+        print(f"\n🔍 Test : '{query[:50]}...' ({word_count} mots >= 5)")
+        
+        enriched = augment_query_with_gemini(query)
+        
+        print(f"   📥 Entrée  : {query}")
+        print(f"   📤 Sortie  : {enriched}")
+        
+        if enriched == query:
+            print(f"   ✅ SUCCÈS : Requête non modifiée (comme attendu)")
+        else:
+            print(f"   ❌ ÉCHEC : Requête modifiée alors qu'elle était déjà longue")
+            assert False, "Une requête longue ne devrait pas être modifiée"
     
     print(f"\n✅ Test 2 réussi : Augmentation Gemini fonctionnelle\n")
 

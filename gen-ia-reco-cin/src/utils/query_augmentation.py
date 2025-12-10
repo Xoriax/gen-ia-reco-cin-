@@ -116,24 +116,28 @@ def augment_query_with_gemini(query: str, api_key: Optional[str] = None, use_cac
     
     try:
         # Construire le prompt d'enrichissement
-        prompt = f"""Tu es un expert en cinéma et séries TV. Un utilisateur recherche un film/série avec cette description très courte :
+        prompt = f"""Tu es un expert en cinéma. Un utilisateur recherche un film avec cette description courte : "{query}"
 
-"{query}"
+CRÉE une description enrichie détaillée en français pour améliorer la recherche de films.
 
-Enrichis cette description en ajoutant du contexte technique et descriptif pour améliorer la recherche. 
+RÈGLES STRICTES :
+- N'écris PAS juste "{query} :" ou "{query}" suivi de deux points
+- Écris une VRAIE description complète avec des détails concrets
+- Ajoute : genres précis, ambiance, style visuel, rythme, thèmes, émotions
+- 2-3 phrases riches en mots-clés pertinents
+- COMMENCE DIRECTEMENT par les mots descriptifs (pas par "{query} :")
 
-Instructions :
-1. Garde l'intention originale de l'utilisateur
-2. Ajoute des détails sur l'atmosphère, le style, le rythme, les thèmes
-3. Reste concis (2-3 phrases maximum)
-4. Utilise un langage descriptif riche
-5. Ne réponds QUE avec la description enrichie, sans explication
+EXEMPLES :
+Entrée : "action film"
+✓ BON : "Film d'action explosif avec combats spectaculaires, poursuites automobiles intenses, scènes d'arts martiaux, cascades dangereuses, rythme effréné et montée d'adrénaline constante"
+✗ MAUVAIS : "action film : Un film d'action"
 
-Exemple :
-Entrée: "action film"
-Sortie: "Film d'action avec des scènes de combat spectaculaires, des poursuites automobiles, des explosions, un rythme intense et dynamique avec une atmosphère adrénaline"
+Entrée : "comédie"
+✓ BON : "Comédie légère et divertissante avec humour absurde, situations comiques, dialogues drôles, personnages attachants, ambiance feel-good et moments hilarants pour toute la famille"
+✗ MAUVAIS : "comédie : "
 
-Enrichis maintenant: "{query}"
+MAINTENANT, enrichis : "{query}"
+Réponds UNIQUEMENT avec la description enrichie (sans dire "Entrée" ou "Sortie") :
 """
         
         # Appel API REST
