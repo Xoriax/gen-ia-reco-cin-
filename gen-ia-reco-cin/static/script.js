@@ -27,6 +27,9 @@ document.getElementById('recommendationForm').addEventListener('submit', async (
     document.querySelector('.loader-container').classList.add('active');
     
     try {
+        // Afficher le résumé des inputs
+        displayInputSummary(formData);
+        
         // Envoi de la requête au backend
         const response = await fetch('/recommend', {
             method: 'POST',
@@ -53,6 +56,81 @@ document.getElementById('recommendationForm').addEventListener('submit', async (
         document.querySelector('.form-container').style.display = 'block';
     }
 });
+
+// Affichage du résumé des inputs
+function displayInputSummary(formData) {
+    const summaryContainer = document.getElementById('summaryContent');
+    const inputSummary = document.getElementById('inputSummary');
+    
+    const periodLabels = {
+        'present-2020': 'Présent - 2020',
+        '2020-2015': '2020 - 2015',
+        '2015-2010': '2015 - 2010',
+        '2010-2000': '2010 - 2000',
+        '2000-1980': '2000 - 1980',
+        '<1980': '< 1980'
+    };
+    
+    const scaleDescriptions = {
+        1: '1 - Très peu',
+        2: '2 - Peu',
+        3: '3 - Modéré',
+        4: '4 - Beaucoup',
+        5: '5 - Énormément'
+    };
+    
+    summaryContainer.innerHTML = '';
+    
+    // Description
+    if (formData.description) {
+        const descItem = document.createElement('div');
+        descItem.className = 'summary-item';
+        descItem.innerHTML = `<span class="summary-label">📝 Description:</span><span class="summary-value">${formData.description.substring(0, 50)}${formData.description.length > 50 ? '...' : ''}</span>`;
+        summaryContainer.appendChild(descItem);
+    }
+    
+    // Film similaire
+    if (formData.similar_title) {
+        const similarItem = document.createElement('div');
+        similarItem.className = 'summary-item';
+        similarItem.innerHTML = `<span class="summary-label">🎬 Film similaire:</span><span class="summary-value">${formData.similar_title}</span>`;
+        summaryContainer.appendChild(similarItem);
+    }
+    
+    // Action
+    const actionItem = document.createElement('div');
+    actionItem.className = 'summary-item';
+    actionItem.innerHTML = `<span class="summary-label">⚡ Action:</span><span class="summary-value">${scaleDescriptions[formData.action_intensity]}</span>`;
+    summaryContainer.appendChild(actionItem);
+    
+    // Complexité
+    const complexityItem = document.createElement('div');
+    complexityItem.className = 'summary-item';
+    complexityItem.innerHTML = `<span class="summary-label">🧩 Complexité:</span><span class="summary-value">${scaleDescriptions[formData.narrative_complexity]}</span>`;
+    summaryContainer.appendChild(complexityItem);
+    
+    // Noirceur
+    const darknessItem = document.createElement('div');
+    darknessItem.className = 'summary-item';
+    darknessItem.innerHTML = `<span class="summary-label">🌑 Noirceur:</span><span class="summary-value">${scaleDescriptions[formData.darkness]}</span>`;
+    summaryContainer.appendChild(darknessItem);
+    
+    // Réalisme
+    const realismItem = document.createElement('div');
+    realismItem.className = 'summary-item';
+    realismItem.innerHTML = `<span class="summary-label">🎭 Réalisme:</span><span class="summary-value">${scaleDescriptions[formData.realism]}</span>`;
+    summaryContainer.appendChild(realismItem);
+    
+    // Période
+    if (formData.period) {
+        const periodItem = document.createElement('div');
+        periodItem.className = 'summary-item';
+        periodItem.innerHTML = `<span class="summary-label">📅 Période:</span><span class="summary-value">${periodLabels[formData.period] || formData.period}</span>`;
+        summaryContainer.appendChild(periodItem);
+    }
+    
+    inputSummary.style.display = 'block';
+}
 
 // Affichage des résultats
 function displayResults(recommendations) {
@@ -89,6 +167,7 @@ function displayResults(recommendations) {
 // Bouton retour
 document.getElementById('backBtn').addEventListener('click', () => {
     document.querySelector('.results-container').classList.remove('active');
+    document.getElementById('inputSummary').style.display = 'none';
     document.querySelector('.form-container').style.display = 'block';
     document.getElementById('recommendationForm').reset();
     

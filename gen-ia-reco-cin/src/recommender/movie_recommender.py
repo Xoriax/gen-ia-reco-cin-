@@ -5,7 +5,7 @@ Prend en charge :
 - Titre similaire (preuve contextuelle)
 - Échelle de Likert (intensité, complexité, noirceur, réalisme)
 - Filtrage par période
-- EF4.1: Enrichissement automatique des requêtes courtes via Gemini AI
+- EF4.1: Enrichissement automatique des requêtes courtes via expansion de contexte
 """
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
