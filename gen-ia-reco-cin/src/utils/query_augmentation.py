@@ -76,59 +76,68 @@ def augment_query_with_simple_expansion(query: str, use_cache: bool = True) -> s
         'action film intensité explosif aventure dramatique suspense'
     """
     
-    # Vérifier si la requête est assez longue
+    # Check if query is long enough
     if not is_query_too_short(query):
-        print(f"[OK] Requete suffisamment longue ({len(query.split())} mots), pas d'enrichissement")
+        print(f"[OK] Query long enough ({len(query.split())} words), no enrichment needed")
         return query
     
-    # Vérifier le cache
+    # Check cache
     cache = load_cache()
     cache_key = query.lower().strip()
     if use_cache and cache_key in cache:
-        print(f"[EF4.1 Cache] - Cache utilise pour '{query}'")
+        print(f"[EF4.1 Cache] - Cache used for '{query}'")
         return cache[cache_key]
     
-    print(f"\n[EF4.1] - Requete courte detectee ({len(query.split())} mots)")
+    print(f"\n[EF4.1] - Short query detected ({len(query.split())} words)")
     print(f"   [Input] : '{query}'")
-    print(f"   [Processing] Enrichissement via expansion de contexte...")
+    print(f"   [Processing] Enriching via context expansion...")
     
-    # Dictionnaire d'enrichissements contextuels
+    # Dictionary of contextual enrichments (English only for consistency with movies.csv)
     enrichment_map = {
-        "action": "film action intensité explosif aventure dynamique suspense cascade combat",
-        "comédie": "film comédie humour drôle amusant léger familial hilarant blague",
-        "horreur": "film horreur peur tension effrayant sombre mature gore psychologique",
-        "romance": "film romance amour émotionnel sentimental drame passion sentiments",
-        "thriller": "film thriller suspense tension intrigue mystère crime enquête",
-        "sci-fi": "film science fiction futuriste imaginaire fantastique technologie espace",
-        "fantasy": "film fantasy fantastique imaginaire magie aventure légende",
-        "drama": "film dramatique intense émotionnel profond psychologique drame",
-        "documentaire": "film documentaire réaliste éducatif informatif historique vrai",
-        "aventure": "film aventure exploration quête voyages découverte exotique",
+        "action": "action movie intense explosive adventure dynamic thriller combat fight",
+        "comedy": "comedy movie humor funny amusing light entertaining hilarious joke",
+        "horror": "horror movie fear tension scary dark mature gore psychological",
+        "romance": "romance movie love emotional sentimental drama passion feelings",
+        "thriller": "thriller movie suspense tension intrigue mystery crime investigation",
+        "sci-fi": "science fiction movie futuristic imaginative fantastic technology space",
+        "sci-fi movie": "science fiction movie futuristic imaginative fantastic technology space",
+        "scifi": "science fiction movie futuristic imaginative fantastic technology space",
+        "fantasy": "fantasy movie imaginative magical adventure legendary enchanted",
+        "drama": "drama movie intense emotional profound psychological deep",
+        "documentary": "documentary movie realistic educational informative historical true",
+        "adventure": "adventure movie exploration quest journey discovery exotic",
+        "animated": "animation movie animated family colorful creative visual",
+        "animation": "animation movie animated family colorful creative visual",
+        "mystery": "mystery movie suspense intrigue puzzle investigation secret",
+        "war": "war movie conflict military historical combat soldiers",
+        "crime": "crime movie criminal investigation detective police justice",
+        "family": "family movie children friendly lighthearted wholesome entertainment",
+        "western": "western movie frontier cowboy old west adventure classic",
     }
     
-    # Chercher les mots-clés correspondants
+    # Find matching keywords
     query_lower = query.lower()
     enriched_parts = [query]
     
-    # Rechercher correspondance
+    # Search for keyword matches
     for keyword, enrichment in enrichment_map.items():
         if keyword in query_lower:
             enriched_parts.append(enrichment)
             break
     
-    # Combiner et limiter la longueur
+    # Combine and limit length
     augmented_query = " ".join(enriched_parts)
-    words = augmented_query.split()[:20]  # Max 20 mots
+    words = augmented_query.split()[:20]  # Max 20 words
     augmented_query = " ".join(words)
     
-    # Sauvegarder en cache
+    # Save to cache
     cache[cache_key] = augmented_query
     if use_cache:
         save_cache()
     
-    print(f"   [OK] Enrichissement reussi")
+    print(f"   [OK] Enrichment successful")
     print(f"   [Output] : '{augmented_query}'")
-    print(f"   [Cache] Sauvegarde dans le cache\n")
+    print(f"   [Cache] Saved to cache\n")
     return augmented_query
 
 def augment_query_with_gemini(query: str, api_key: Optional[str] = None, use_cache: bool = True) -> str:

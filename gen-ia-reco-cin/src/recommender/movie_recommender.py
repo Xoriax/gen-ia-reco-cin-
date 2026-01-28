@@ -149,29 +149,29 @@ def build_query_from_criteria(
     if similar_title:
         query_parts.append(f"similaire à {similar_title}")
     
-    # Intensité de l'action
+    # Action intensity (English for consistency with movies.csv)
     if action_intensity <= 2:
-        query_parts.append("calme contemplatif lent")
+        query_parts.append("calm contemplative slow peaceful")
     elif action_intensity >= 4:
-        query_parts.append("action intense explosif dynamique")
+        query_parts.append("action intense explosive dynamic fight combat")
     
-    # Complexité narrative
+    # Narrative complexity
     if narrative_complexity <= 2:
-        query_parts.append("scénario simple linéaire direct")
+        query_parts.append("simple plot linear straightforward direct")
     elif narrative_complexity >= 4:
-        query_parts.append("scénario complexe puzzle mental intrigue")
+        query_parts.append("complex puzzle mind-bending intricate mystery")
     
-    # Noirceur/Violence
+    # Darkness/Violence
     if darkness <= 2:
-        query_parts.append("familial léger optimiste")
+        query_parts.append("family friendly lighthearted optimistic")
     elif darkness >= 4:
-        query_parts.append("sombre violent mature dur")
+        query_parts.append("dark violent mature gritty psychological")
     
-    # Réalisme
+    # Realism vs Fantasy
     if realism <= 2:
-        query_parts.append("réaliste documentaire historique")
+        query_parts.append("realistic documentary historical true story")
     elif realism >= 4:
-        query_parts.append("fantastique surréaliste imaginaire science-fiction")
+        query_parts.append("fantasy fantastical imaginative science fiction magical")
     
     return " ".join(query_parts)
 
@@ -182,34 +182,84 @@ def calculate_likert_weights(
     realism: int = 3
 ) -> Dict[str, float]:
     """
-    Calcule des pondérations basées sur les scores Likert.
-    Favorise les catégories correspondant aux préférences.
+    Calculates weights based on Likert scores.
+    Maps user preferences to genre weights for scoring.
+    Uses genres found in the movies.csv file.
+    
+    Args:
+        action_intensity: 1-5 (1=Calm, 5=Action)
+        narrative_complexity: 1-5 (1=Simple, 5=Complex)
+        darkness: 1-5 (1=Family, 5=Dark/Violent)
+        realism: 1-5 (1=Realistic, 5=Fantasy)
+    
+    Returns:
+        Dictionary mapping genres to weight multipliers
     """
     weights = {}
     
-    # Action intensity
+    # Action intensity (genres with strong action)
     if action_intensity >= 4:
-        weights.update({"Action": 1.5, "Adventure": 1.3, "Thriller": 1.2})
+        weights.update({
+            "Action": 1.5,
+            "Adventure": 1.3,
+            "Thriller": 1.2,
+            "War": 1.2
+        })
     elif action_intensity <= 2:
-        weights.update({"Drama": 1.3, "Documentary": 1.2, "Romance": 1.2})
+        weights.update({
+            "Drama": 1.3,
+            "Documentary": 1.2,
+            "Romance": 1.2,
+            "Comedy": 1.1
+        })
     
     # Narrative complexity
     if narrative_complexity >= 4:
-        weights.update({"Mystery": 1.4, "Thriller": 1.3, "Sci-Fi & Fantasy": 1.2})
+        weights.update({
+            "Mystery": 1.4,
+            "Thriller": 1.3,
+            "Science Fiction": 1.2,
+            "Drama": 1.2
+        })
     elif narrative_complexity <= 2:
-        weights.update({"Comedy": 1.2, "Family": 1.1, "Animation": 1.1})
+        weights.update({
+            "Comedy": 1.2,
+            "Family": 1.1,
+            "Animation": 1.1,
+            "Romance": 1.1
+        })
     
-    # Darkness
+    # Darkness (violent/dark genres)
     if darkness >= 4:
-        weights.update({"Horror": 1.5, "Crime": 1.4, "War": 1.3, "Thriller": 1.2})
+        weights.update({
+            "Horror": 1.5,
+            "Crime": 1.4,
+            "War": 1.3,
+            "Thriller": 1.2,
+            "Drama": 1.1
+        })
     elif darkness <= 2:
-        weights.update({"Family": 1.4, "Comedy": 1.3, "Animation": 1.3, "Romance": 1.2})
+        weights.update({
+            "Family": 1.4,
+            "Comedy": 1.3,
+            "Animation": 1.3,
+            "Romance": 1.2
+        })
     
-    # Realism
+    # Realism vs Fantasy
     if realism >= 4:
-        weights.update({"Sci-Fi & Fantasy": 1.5, "Fantasy": 1.4, "Animation": 1.2})
+        weights.update({
+            "Science Fiction": 1.5,
+            "Fantasy": 1.4,
+            "Animation": 1.2
+        })
     elif realism <= 2:
-        weights.update({"Documentary": 1.5, "Drama": 1.2, "History": 1.3, "War": 1.2})
+        weights.update({
+            "Documentary": 1.5,
+            "Drama": 1.2,
+            "History": 1.3,
+            "War": 1.2
+        })
     
     return weights
 
@@ -263,14 +313,14 @@ def recommend_movies(
         df_filtered = df
         embeddings_filtered = embeddings
     
-    # Construire la requête enrichie
+    # Build enriched query
     query = build_query_from_criteria(
         description, similar_title,
         action_intensity, narrative_complexity,
         darkness, realism
     )
     
-    print(f"Requête construite : {query}")
+    print(f"[Query] Built query: {query}")
     
     # Encoder la requête
     q_emb = embed_text([query])
@@ -285,18 +335,26 @@ def recommend_movies(
             darkness, realism
         )
         
-        # Appliquer les poids aux catégories
+        # Apply weights to genres (not category)
+        # Each movie can have multiple genres separated by commas
         weighted_sims = []
         for i, (idx, row) in enumerate(df_filtered.iterrows()):
-            category = row.get('Catégorie', '')
-            weight = weights.get(category, 1.0)
-            weighted_sims.append(sims[i] * weight)
+            genre_str = str(row.get('Genre', ''))
+            genres_list = [g.strip() for g in genre_str.split(',')]
+            
+            # Find maximum weight among all genres of this movie
+            max_weight = 1.0
+            for genre in genres_list:
+                if genre in weights:
+                    max_weight = max(max_weight, weights[genre])
+            
+            weighted_sims.append(sims[i] * max_weight)
         sims = np.array(weighted_sims)
     
-    # Trier et récupérer top_k
+    # Sort and get top_k
     top_indices = np.argsort(sims)[::-1][:top_k]
     
-    # Construire les résultats
+    # Build results
     recommendations = []
     for idx in top_indices:
         row = df_filtered.iloc[idx]
