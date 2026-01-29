@@ -1,107 +1,112 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎬 Recommandation de Films</title>
+    <title>🎬 Movie Recommendation System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🎬 Ciné Recommandation</h1>
-            <p>Trouvez le film parfait pour votre soirée</p>
+            <h1>🎬 Cine Recommender</h1>
+            <p>Find the perfect movie for your evening</p>
+            <div style="margin-top: 20px;">
+                <a href="/" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; margin-right: 10px; transition: background 0.3s;">
+                    ← Back to Quiz
+                </a>
+            </div>
         </div>
 
-        <!-- Formulaire -->
+        <!-- Form -->
         <div class="form-container">
             <form id="recommendationForm">
-                <!-- Description Libre -->
+                <!-- Free-form Description -->
                 <div class="form-section">
-                    <h2>📝 Description Libre</h2>
-                    <label for="description">Décrivez en quelques phrases le type de film que vous avez envie de regarder maintenant :</label>
+                    <h2>📝 Free-form Description</h2>
+                    <label for="description">Describe in a few sentences the type of movie you want to watch right now:</label>
                     <textarea 
                         id="description" 
                         name="description" 
-                        placeholder="Ex: Je veux un film dramatique intense avec du crime et du suspense..."
+                        placeholder="E.g: I want an intense drama with crime and suspense..."
                     ></textarea>
                 </div>
 
-                <!-- Preuve Contextuelle -->
+                <!-- Contextual Proof -->
                 <div class="form-section">
-                    <h2>🎬 Preuve Contextuelle</h2>
-                    <label for="similar_title">Donnez un titre de film similaire :</label>
+                    <h2>🎬 Similar Title</h2>
+                    <label for="similar_title">Give a similar movie title:</label>
                     <input 
                         type="text" 
                         id="similar_title" 
                         name="similar_title" 
-                        placeholder="Ex: The Shawshank Redemption"
+                        placeholder="E.g: The Shawshank Redemption"
                     >
                 </div>
 
-                <!-- Échelle de Likert -->
+                <!-- Likert Scale -->
                 <div class="form-section">
-                    <h2>📊 Échelle de Likert</h2>
+                    <h2>📊 Preference Scale</h2>
                     <p style="color: #666; margin-bottom: 20px;">
-                        <strong>Instruction :</strong> Sur une échelle de 1 à 5, évaluez votre intérêt actuel pour les éléments suivants :
+                        <strong>Instructions:</strong> On a scale of 1 to 5, rate your current interest in the following elements:
                     </p>
 
                     <div class="likert-scale">
-                        <!-- Intensité de l'Action -->
+                        <!-- Action Intensity -->
                         <div class="likert-item">
-                            <label for="action">⚡ Intensité de l'Action</label>
+                            <label for="action">⚡ Action Intensity</label>
                             <div class="scale-container">
-                                <span class="scale-label left">Calme/Contemplatif</span>
+                                <span class="scale-label left">Calm/Contemplative</span>
                                 <input type="range" id="action" name="action" min="1" max="5" value="3">
                                 <span class="scale-value">3</span>
-                                <span class="scale-label">Action pure/Explosif</span>
+                                <span class="scale-label">Pure action/Explosive</span>
                             </div>
                         </div>
 
-                        <!-- Complexité Narrative -->
+                        <!-- Narrative Complexity -->
                         <div class="likert-item">
-                            <label for="complexity">🧩 Complexité Narrative</label>
+                            <label for="complexity">🧩 Narrative Complexity</label>
                             <div class="scale-container">
-                                <span class="scale-label left">Linéaire/Simple</span>
+                                <span class="scale-label left">Linear/Simple</span>
                                 <input type="range" id="complexity" name="complexity" min="1" max="5" value="3">
                                 <span class="scale-value">3</span>
-                                <span class="scale-label">Puzzle mental/Complexe</span>
+                                <span class="scale-label">Mind-bending/Complex</span>
                             </div>
                         </div>
 
-                        <!-- Noirceur/Violence -->
+                        <!-- Darkness / Violence -->
                         <div class="likert-item">
-                            <label for="darkness">🌑 Noirceur / Violence</label>
+                            <label for="darkness">🌑 Darkness / Violence</label>
                             <div class="scale-container">
-                                <span class="scale-label left">Familial/Léger</span>
+                                <span class="scale-label left">Family-friendly/Light</span>
                                 <input type="range" id="darkness" name="darkness" min="1" max="5" value="3">
                                 <span class="scale-value">3</span>
-                                <span class="scale-label">Sombre/Violent</span>
+                                <span class="scale-label">Dark/Violent</span>
                             </div>
                         </div>
 
-                        <!-- Réalisme -->
+                        <!-- Realism -->
                         <div class="likert-item">
-                            <label for="realism">🎭 Réalisme</label>
+                            <label for="realism">🎭 Realism</label>
                             <div class="scale-container">
-                                <span class="scale-label left">Documentaire/Réel</span>
+                                <span class="scale-label left">Documentary/Grounded</span>
                                 <input type="range" id="realism" name="realism" min="1" max="5" value="3">
                                 <span class="scale-value">3</span>
-                                <span class="scale-label">Fantastique/Surréaliste</span>
+                                <span class="scale-label">Fantasy/Surreal</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Période -->
+                <!-- Time Period -->
                 <div class="form-section">
-                    <h2>📅 Période</h2>
-                    <label>Sur quelle période le film que vous aimeriez regarder :</label>
+                    <h2>📅 Time Period</h2>
+                    <label>What time period would you like the movie from:</label>
                     <div class="period-selector">
                         <div class="period-option">
                             <input type="radio" id="period1" name="period" value="present-2020">
-                            <label for="period1">Présent - 2020</label>
+                            <label for="period1">Present - 2020</label>
                         </div>
                         <div class="period-option">
                             <input type="radio" id="period2" name="period" value="2020-2015">
@@ -121,35 +126,35 @@
                         </div>
                         <div class="period-option">
                             <input type="radio" id="period6" name="period" value="<1980">
-                            <label for="period6">< 1980</label>
+                            <label for="period6">Before 1980</label>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="submit-btn">🔍 Trouver mes films</button>
+                <button type="submit" class="submit-btn">🔍 Find My Movies</button>
             </form>
         </div>
 
         <!-- Loader -->
         <div class="loader-container">
             <div class="loader"></div>
-            <p class="loader-text">🎬 Recherche de vos films parfaits...</p>
+            <p class="loader-text">🎬 Searching for your perfect movies...</p>
         </div>
 
         <!-- Input Summary -->
         <div class="input-summary" id="inputSummary" style="display: none;">
-            <h3>📋 Votre Recherche</h3>
+            <h3>📋 Your Search</h3>
             <div class="summary-grid" id="summaryContent"></div>
         </div>
 
-        <!-- Résultats -->
+        <!-- Results -->
         <div class="results-container">
             <div class="results-header">
-                <h2>🎉 Vos Recommandations</h2>
-                <p style="color: #666;">Voici les films sélectionnés pour vous</p>
+                <h2>🎉 Your Recommendations</h2>
+                <p style="color: #666;">Here are the movies selected for you</p>
             </div>
             <div id="results-content"></div>
-            <button id="backBtn" class="back-btn">← Nouvelle recherche</button>
+            <button id="backBtn" class="back-btn">← New Search</button>
         </div>
     </div>
 

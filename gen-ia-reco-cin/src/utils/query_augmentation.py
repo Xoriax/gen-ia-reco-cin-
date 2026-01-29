@@ -1,8 +1,8 @@
 """
-Module d'enrichissement de requêtes utilisateur (EF4.1).
-Enrichit automatiquement les phrases d'entrée trop courtes (< 5 mots)
-pour améliorer la précision des embeddings NLP.
-Utilise des modèles locaux Hugging Face pour un traitement autonome sans dépendance API.
+Query enrichment module for user requests (EF4.1).
+Automatically enriches short input sentences (< 5 words)
+to improve NLP embedding precision.
+Uses local Hugging Face models for autonomous processing without API dependency.
 """
 import json
 from typing import Optional
@@ -16,7 +16,7 @@ CACHE_FILE = Path(__file__).parent / ".query_cache.json"
 _CACHE = None
 
 def load_cache():
-    """Charge le cache depuis le fichier."""
+    """Loads cache from file."""
     global _CACHE
     if _CACHE is None:
         if CACHE_FILE.exists():
@@ -30,29 +30,29 @@ def load_cache():
     return _CACHE
 
 def save_cache():
-    """Sauvegarde le cache dans le fichier."""
+    """Saves cache to file."""
     global _CACHE
     if _CACHE is not None:
         try:
             with open(CACHE_FILE, 'w', encoding='utf-8') as f:
                 json.dump(_CACHE, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"⚠️ Erreur lors de la sauvegarde du cache : {e}")
+            print(f"⚠️ Error saving cache: {e}")
 
 def is_query_too_short(query: str) -> bool:
     """
-    Vérifie si une requête est trop courte (< 5 mots).
+    Checks if a query is too short (< 5 words).
     
     Args:
-        query: Texte de la requête utilisateur
+        query: User query text
         
     Returns:
-        True si la requête contient moins de 5 mots
+        True if query contains fewer than 5 words
         
     Example:
-        >>> is_query_too_short("action film")
+        >>> is_query_too_short("action movie")
         True
-        >>> is_query_too_short("Je veux un film d'action intense")
+        >>> is_query_too_short("I want an intense action movie")
         False
     """
     if not query or not query.strip():
@@ -61,19 +61,19 @@ def is_query_too_short(query: str) -> bool:
 
 def augment_query_with_simple_expansion(query: str, use_cache: bool = True) -> str:
     """
-    Enrichit une requête courte via une approche simple basée sur des règles.
-    Alternative légère et efficace sans dépendance modèle lourd.
+    Enriches a short query via simple rule-based approach.
+    Lightweight and efficient alternative without heavy model dependency.
     
     Args:
-        query: Requête utilisateur originale
-        use_cache: Utiliser le cache pour éviter les appels répétés
+        query: Original user query
+        use_cache: Use cache to avoid repeated calls
     
     Returns:
-        Requête enrichie (ou requête originale si déjà suffisamment longue)
+        Enriched query (or original query if already long enough)
     
     Example:
-        >>> augment_query_with_simple_expansion("action film")
-        'action film intensité explosif aventure dramatique suspense'
+        >>> augment_query_with_simple_expansion("action movie")
+        'action movie intense explosive adventure dynamic suspense'
     """
     
     # Check if query is long enough
@@ -142,32 +142,32 @@ def augment_query_with_simple_expansion(query: str, use_cache: bool = True) -> s
 
 def augment_query_with_gemini(query: str, api_key: Optional[str] = None, use_cache: bool = True) -> str:
     """
-    Wrapper pour rétrocompatibilité. Utilise désormais l'expansion simple (EF4.1).
+    Wrapper for backward compatibility. Now uses simple expansion (EF4.1).
     
     Args:
-        query: Requête utilisateur à enrichir
-        api_key: Non utilisé (rétrocompatibilité)
-        use_cache: Utiliser le cache pour éviter les appels répétés
+        query: User query to enrich
+        api_key: Not used (backward compatibility)
+        use_cache: Use cache to avoid repeated calls
     
     Returns:
-        Requête enrichie
+        Enriched query
         
     Example:
-        >>> augment_query_with_gemini("action film")
-        'action film intensité explosif aventure dynamique suspense'
+        >>> augment_query_with_gemini("action movie")
+        'action movie intense explosive adventure dynamic suspense'
     """
     return augment_query_with_simple_expansion(query, use_cache)
 
 def augment_query_batch(queries: list[str], api_key: Optional[str] = None) -> list[str]:
     """
-    Enrichit plusieurs requêtes en batch (EF4.1).
+    Enriches multiple queries in batch (EF4.1).
     
     Args:
-        queries: Liste de requêtes à enrichir
-        api_key: Non utilisé (rétrocompatibilité)
+        queries: List of queries to enrich
+        api_key: Not used (backward compatibility)
     
     Returns:
-        Liste des requêtes enrichies
+        List of enriched queries
     """
     return [augment_query_with_gemini(q, api_key) for q in queries]
 

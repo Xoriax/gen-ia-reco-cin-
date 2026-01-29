@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Movie Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .interactive-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .interactive-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .interactive-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .interactive-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .interactive-content {
+            padding: 40px;
+        }
+
+        .question-section {
+            margin-bottom: 40px;
+        }
+
+        .question-section h2 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-section textarea,
+        .question-section input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .question-section textarea:focus,
+        .question-section input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .likert-scale {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .likert-item {
+            margin-bottom: 20px;
+        }
+
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .likert-scale input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #ef4444, #f97316, #eab308, #22c55e, #3b82f6);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .likert-scale input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .likert-scale input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .likert-value {
+            margin-top: 8px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1rem;
+        }
+
+        .period-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .period-option {
+            display: flex;
+            align-items: center;
+        }
+
+        .period-option input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .period-option label {
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-back {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-back:hover {
+            background: #d1d5db;
+        }
+
+        .loader-container {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loader-container.active {
+            display: block;
+        }
+
+        .loader {
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            display: none;
+            padding: 40px;
+        }
+
+        .results-container.active {
+            display: block;
+        }
+
+        .genai-justification-box {
+            background: linear-gradient(135deg, #f0f4ff 0%, #f3e8ff 100%);
+            border: 2px solid #d9cff0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 5px solid #6366f1;
+        }
+
+        .genai-justification-box h3 {
+            color: #4f46e5;
+            margin: 0 0 10px 0;
+        }
+
+        .genai-justification-box p {
+            color: #4b5563;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .movie-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .movie-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .movie-title {
+            color: #1f2937;
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+        }
+
+        .movie-info {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .movie-score {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .movie-description {
+            color: #4b5563;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="interactive-container">
+        <!-- Header -->
+        <div class="interactive-header">
+            <h1>🎬 Movie Recommendation Quiz</h1>
+            <p>Answer a few questions to get personalized recommendations</p>
+        </div>
+
+        <!-- Form -->
+        <form id="interactiveForm" class="interactive-content">
+            <!-- Description -->
+            <div class="question-section">
+                <h2>📝 What are you in the mood for?</h2>
+                <textarea id="description" placeholder="Describe the type of movie/show you want to watch..." rows="4" required></textarea>
+            </div>
+
+            <!-- Similar Title -->
+            <div class="question-section">
+                <h2>🎬 Similar Title (optional)</h2>
+                <input type="text" id="similarTitle" placeholder="Give a title of a similar movie you like (e.g., Avatar, The Matrix)">
+            </div>
+
+            <!-- Likert Scale -->
+            <div class="question-section">
+                <h2>📊 Rate Your Preferences</h2>
+                
+                <div class="likert-item">
+                    <div class="likert-labels">
+                        <span>⚡ Action Intensity</span>
+                        <span id="actionValue">Moderate</span>
+                    </div>
+                    <input type="range" id="actionIntensity" min="1" max="5" value="3">
+                    <div class="likert-labels">
+                        <span>Very Calm</span>
+                        <span>Pure Action</span>
+                    </div>
+                </div>
+
+                <div class="likert-item">
+                    <div class="likert-labels">
+                        <span>🧩 Narrative Complexity</span>
+                        <span id="complexityValue">Moderate</span>
+                    </div>
+                    <input type="range" id="narrativeComplexity" min="1" max="5" value="3">
+                    <div class="likert-labels">
+                        <span>Simple Plot</span>
+                        <span>Mind-bending</span>
+                    </div>
+                </div>
+
+                <div class="likert-item">
+                    <div class="likert-labels">
+                        <span>🌑 Darkness / Violence</span>
+                        <span id="darknessValue">Balanced</span>
+                    </div>
+                    <input type="range" id="darkness" min="1" max="5" value="3">
+                    <div class="likert-labels">
+                        <span>Family-friendly</span>
+                        <span>Dark/Violent</span>
+                    </div>
+                </div>
+
+                <div class="likert-item">
+                    <div class="likert-labels">
+                        <span>🌍 Realism</span>
+                        <span id="realismValue">Balanced</span>
+                    </div>
+                    <input type="range" id="realism" min="1" max="5" value="3">
+                    <div class="likert-labels">
+                        <span>Documentary</span>
+                        <span>Fantasy</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Period -->
+            <div class="question-section">
+                <h2>📅 Time Period</h2>
+                <div class="period-options">
+                    <div class="period-option">
+                        <input type="radio" id="period1" name="period" value="present-2020">
+                        <label for="period1">Present - 2020</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period2" name="period" value="2020-2015">
+                        <label for="period2">2020 - 2015</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period3" name="period" value="2015-2010">
+                        <label for="period3">2015 - 2010</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period4" name="period" value="2010-2000">
+                        <label for="period4">2010 - 2000</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period5" name="period" value="2000-1980">
+                        <label for="period5">2000 - 1980</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period6" name="period" value="1980<">
+                        <label for="period6">Before 1980</label>
+                    </div>
+                    <div class="period-option">
+                        <input type="radio" id="period7" name="period" value="">
+                        <label for="period7">All periods</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button type="button" class="btn-back" onclick="location.reload()">← Clear Form</button>
+                <button type="submit" class="btn-submit">Get Recommendations →</button>
+            </div>
+        </form>
+
+        <!-- Loader -->
+        <div class="loader-container" id="loader">
+            <div class="loader"></div>
+            <p>Finding your perfect recommendations...</p>
+        </div>
+
+        <!-- Results -->
+        <div class="results-container" id="results">
+            <div id="resultsContent"></div>
+            <div class="button-group">
+                <button type="button" class="btn-back" onclick="resetForm()">← New Search</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update Likert value displays
+        document.getElementById('actionIntensity').addEventListener('input', (e) => {
+            const values = ['', 'Very Calm', 'Calm', 'Balanced', 'Action-packed', 'Explosive'];
+            document.getElementById('actionValue').textContent = values[e.target.value];
+        });
+
+        document.getElementById('narrativeComplexity').addEventListener('input', (e) => {
+            const values = ['', 'Simple', 'Simple', 'Moderate', 'Complex', 'Mind-bending'];
+            document.getElementById('complexityValue').textContent = values[e.target.value];
+        });
+
+        document.getElementById('darkness').addEventListener('input', (e) => {
+            const values = ['', 'Family-friendly', 'Light', 'Balanced', 'Dark', 'Very Dark'];
+            document.getElementById('darknessValue').textContent = values[e.target.value];
+        });
+
+        document.getElementById('realism').addEventListener('input', (e) => {
+            const values = ['', 'Grounded', 'Realistic', 'Balanced', 'Fantastical', 'Surreal'];
+            document.getElementById('realismValue').textContent = values[e.target.value];
+        });
+
+        // Form submission
+        document.getElementById('interactiveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                description: document.getElementById('description').value,
+                similar_title: document.getElementById('similarTitle').value,
+                action_intensity: parseInt(document.getElementById('actionIntensity').value),
+                narrative_complexity: parseInt(document.getElementById('narrativeComplexity').value),
+                darkness: parseInt(document.getElementById('darkness').value),
+                realism: parseInt(document.getElementById('realism').value),
+                period: document.querySelector('input[name="period"]:checked')?.value || null
+            };
+
+            // Show loader
+            document.getElementById('interactiveForm').style.display = 'none';
+            document.getElementById('loader').classList.add('active');
+
+            try {
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                displayResults(data.recommendations, data.genai_justification);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('loader').classList.remove('active');
+                document.getElementById('interactiveForm').style.display = 'block';
+            }
+        });
+
+        function displayResults(recommendations, genaiJustification) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = '';
+
+            // GenAI Justification
+            if (genaiJustification) {
+                const justBox = document.createElement('div');
+                justBox.className = 'genai-justification-box';
+                justBox.innerHTML = `
+                    <h3>💡 Why These Recommendations?</h3>
+                    <p>${genaiJustification}</p>
+                `;
+                resultsContent.appendChild(justBox);
+            }
+
+            // Movies
+            recommendations.forEach((movie, index) => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.innerHTML = `
+                    <h3 class="movie-title">${index + 1}. ${movie.title} (${movie.year})</h3>
+                    <div class="movie-info">
+                        <span>📁 ${movie.category}</span>
+                        <span>🎭 ${movie.genre}</span>
+                        <span class="movie-score">⭐ ${movie.score.toFixed(4)}</span>
+                    </div>
+                    <p class="movie-description">${movie.description}</p>
+                `;
+                resultsContent.appendChild(card);
+            });
+
+            document.getElementById('loader').classList.remove('active');
+            document.getElementById('results').classList.add('active');
+        }
+
+        function resetForm() {
+            document.getElementById('interactiveForm').reset();
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('interactiveForm').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

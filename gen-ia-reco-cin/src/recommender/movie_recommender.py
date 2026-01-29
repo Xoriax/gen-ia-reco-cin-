@@ -1,11 +1,12 @@
 """
-Module de recommandation de films et TV shows spécifiques basé sur les critères utilisateur.
-Prend en charge :
-- Description libre
-- Titre similaire (preuve contextuelle)
-- Échelle de Likert (intensité, complexité, noirceur, réalisme)
-- Filtrage par période
-- EF4.1: Enrichissement automatique des requêtes courtes via expansion de contexte
+Movie recommendation module for films and TV shows based on user criteria.
+Supports:
+- Free-form description
+- Similar title (contextual proof via semantic search)
+- Likert scale (intensity, complexity, darkness, realism)
+- Period filtering
+- EF4.1: Automatic enrichment of short queries via context expansion
+- Local semantic search: No external APIs needed (pure Hugging Face)
 """
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -16,9 +17,11 @@ import pickle
 import pandas as pd
 import sys
 
-# Import du module d'augmentation (EF4.1)
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "utils"))
-from query_augmentation import augment_query_with_gemini
+# Import augmentation module (EF4.1)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.utils.query_augmentation import augment_query_with_gemini
+from src.utils.semantic_search import find_similar_movies_in_dataset, aggregate_similar_movies_context
+from src.utils.genai_justification import generate_recommendation_justification
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"
 _MODEL: Optional[SentenceTransformer] = None
@@ -32,29 +35,29 @@ def get_model() -> SentenceTransformer:
     return _MODEL
 
 def load_movies_df(csv_path: str = None) -> pd.DataFrame:
-    """Charge le DataFrame complet des films/TV shows."""
+    """Load complete DataFrame of movies/TV shows."""
     p = Path(csv_path) if csv_path else DEFAULT_CSV
     df = pd.read_csv(p, dtype=str, keep_default_na=False)
-    # Convertir l'année en numérique pour le filtrage
+    # Convert year to numeric for filtering
     df['Année'] = pd.to_numeric(df['Année'], errors='coerce')
     return df
 
 def build_movie_embeddings(df: pd.DataFrame) -> np.ndarray:
     """
-    Construit les embeddings pour chaque film/TV show.
-    Combine : Titre + Description + Genre + Catégorie pour un embedding riche.
+    Build embeddings for each movie/TV show.
+    Combines: Title + Description + Genre + Category for rich embedding.
     """
     model = get_model()
     
-    # Créer des textes enrichis pour chaque film
+    # Create enriched texts for each movie
     texts = []
     for _, row in df.iterrows():
-        # Combiner plusieurs champs pour un embedding plus riche
+        # Combine multiple fields for richer embedding
         text_parts = [
-            f"Titre: {row.get('Film', '')}",
+            f"Title: {row.get('Film', '')}",
             f"Description: {row.get('Description narrative', '')}",
             f"Genre: {row.get('Genre', '')}",
-            f"Catégorie: {row.get('Catégorie', '')}",
+            f"Category: {row.get('Catégorie', '')}",
             f"BlockID: {row.get('BlockID', '')}"
         ]
         combined_text = " ".join(text_parts)
@@ -63,7 +66,7 @@ def build_movie_embeddings(df: pd.DataFrame) -> np.ndarray:
     return model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
 
 def build_and_save_movie_index(csv_path: str = None, out_path: str = None) -> Tuple[pd.DataFrame, np.ndarray]:
-    """Construit l'index de films avec embeddings et le sauvegarde."""
+    """Build movie index with embeddings and save it."""
     df = load_movies_df(csv_path)
     embeddings = build_movie_embeddings(df)
     
@@ -78,7 +81,7 @@ def build_and_save_movie_index(csv_path: str = None, out_path: str = None) -> Tu
     return df, embeddings
 
 def load_movie_index(path: str = None) -> Tuple[pd.DataFrame, np.ndarray]:
-    """Charge l'index de films avec embeddings. Si absent, le construit."""
+    """Load movie index with embeddings. If missing, build it."""
     p = Path(path) if path else DEFAULT_PICKLE
     if not p.exists():
         return build_and_save_movie_index()
@@ -87,14 +90,14 @@ def load_movie_index(path: str = None) -> Tuple[pd.DataFrame, np.ndarray]:
     return data["df"], data["embeddings"]
 
 def embed_text(texts: List[str]) -> np.ndarray:
-    """Encode une ou plusieurs chaînes."""
+    """Encode one or more strings."""
     model = get_model()
     return model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
 
 def filter_by_period(df: pd.DataFrame, period: str) -> pd.DataFrame:
     """
-    Filtre les films par période.
-    Périodes supportées :
+    Filter movies by period.
+    Supported periods:
     - "present-2020" : >= 2020
     - "2020-2015" : 2015-2019
     - "2015-2010" : 2010-2014
@@ -115,7 +118,7 @@ def filter_by_period(df: pd.DataFrame, period: str) -> pd.DataFrame:
     elif period == "1980<":
         return df[df['Année'] < 1980]
     else:
-        return df  # Pas de filtre
+        return df  # No filter
 
 def build_query_from_criteria(
     description: str = "",
@@ -126,28 +129,28 @@ def build_query_from_criteria(
     realism: int = 3
 ) -> str:
     """
-    Construit une requête enrichie à partir des critères utilisateur.
+    Build enriched query from user criteria.
     
     Args:
-        description: Description libre du film recherché
-        similar_title: Titre d'un film similaire
-        action_intensity: 1-5 (1=Calme, 5=Action pure)
-        narrative_complexity: 1-5 (1=Simple, 5=Complexe)
-        darkness: 1-5 (1=Familial, 5=Sombre/Violent)
-        realism: 1-5 (1=Documentaire, 5=Fantastique)
+        description: Free-form description of desired movie
+        similar_title: Title of a similar movie
+        action_intensity: 1-5 (1=Calm, 5=Action)
+        narrative_complexity: 1-5 (1=Simple, 5=Complex)
+        darkness: 1-5 (1=Family, 5=Dark/Violent)
+        realism: 1-5 (1=Realistic, 5=Fantasy)
     
     Returns:
-        Requête textuelle enrichie
+        Enriched textual query
     """
     query_parts = []
     
-    # Description libre (priorité haute)
+    # Free-form description (high priority)
     if description:
         query_parts.append(description)
     
-    # Titre similaire (preuve contextuelle)
+    # Similar title (contextual proof)
     if similar_title:
-        query_parts.append(f"similaire à {similar_title}")
+        query_parts.append(f"similar to {similar_title}")
     
     # Action intensity (English for consistency with movies.csv)
     if action_intensity <= 2:
@@ -182,7 +185,7 @@ def calculate_likert_weights(
     realism: int = 3
 ) -> Dict[str, float]:
     """
-    Calculates weights based on Likert scores.
+    Calculate weights based on Likert scores.
     Maps user preferences to genre weights for scoring.
     Uses genres found in the movies.csv file.
     
@@ -263,6 +266,43 @@ def calculate_likert_weights(
     
     return weights
 
+def process_similar_title(similar_title: str, df: pd.DataFrame, embeddings: np.ndarray) -> Optional[str]:
+    """
+    Process similar title using local semantic search.
+    Finds similar movies in our dataset and aggregates their context.
+    No external APIs - pure Hugging Face embeddings!
+    
+    Args:
+        similar_title: Movie title provided by user
+        df: Movies dataframe
+        embeddings: Pre-computed embeddings for all movies
+        
+    Returns:
+        Aggregated context from similar movies or None
+    """
+    if not similar_title:
+        return None
+    
+    print(f"\n[SIMILAR TITLE] Processing: '{similar_title}'")
+    
+    # Find similar movies in our dataset
+    similar_movies = find_similar_movies_in_dataset(
+        similar_title,
+        df,
+        embeddings,
+        top_k=5
+    )
+    
+    if not similar_movies:
+        print(f"   ⚠️  No similar movies found in dataset")
+        return None
+    
+    # Aggregate descriptions from found similar movies
+    aggregated_context = aggregate_similar_movies_context(similar_movies, max_descriptions=3)
+    print(f"   ✓ Aggregated context from {len(similar_movies)} similar movies")
+    
+    return aggregated_context
+
 def recommend_movies(
     description: str = "",
     similar_title: str = "",
@@ -276,37 +316,42 @@ def recommend_movies(
     enable_augmentation: bool = True
 ) -> List[Dict]:
     """
-    Recommande des films/TV shows spécifiques basés sur les critères utilisateur.
+    Recommend specific movies/TV shows based on user criteria.
+    
+    Uses weighted scoring formula:
+    SCORE_FINAL = (FREE_FORM × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE_WEIGHT × 0.20) + (COSINE × 0.30)
+    
+    All similarity calculations use Hugging Face SentenceTransformer embeddings (no external APIs).
     
     Args:
-        description: Description libre du film recherché
-        similar_title: Titre d'un film similaire
-        action_intensity: 1-5 (Intensité de l'action)
-        narrative_complexity: 1-5 (Complexité narrative)
-        darkness: 1-5 (Noirceur/Violence)
-        realism: 1-5 (Réalisme vs Fantastique)
-        period: Période temporelle (ex: "present-2020", "2010-2000")
-        top_k: Nombre de recommandations
-        use_weights: Appliquer la pondération Likert
-        enable_augmentation: EF4.1 - Activer l'enrichissement automatique des requêtes courtes
+        description: Free-form description of desired movie
+        similar_title: Title of a similar movie (matched semantically in dataset)
+        action_intensity: 1-5 (Action intensity)
+        narrative_complexity: 1-5 (Narrative complexity)
+        darkness: 1-5 (Darkness/Violence)
+        realism: 1-5 (Realism vs Fantasy)
+        period: Time period (ex: "present-2020", "2010-2000")
+        top_k: Number of recommendations
+        use_weights: Apply Likert weighting
+        enable_augmentation: EF4.1 - Enable automatic enrichment of short queries
     
     Returns:
-        Liste de dictionnaires avec les recommandations
+        List of dictionaries with recommendations
     """
-    # EF4.1 : Augmentation de la description si elle est trop courte
+    # EF4.1: Augment description if too short
     if description and enable_augmentation:
         description = augment_query_with_gemini(description)
     
-    # Charger l'index
+    # Load index
     df, embeddings = load_movie_index()
     
-    # Filtrer par période si spécifié
+    # Filter by period if specified
     if period:
         df_filtered = filter_by_period(df, period)
         if len(df_filtered) == 0:
-            print(f"Aucun film trouvé pour la période {period}")
+            print(f"No movies found for period {period}")
             df_filtered = df
-        # Recalculer les indices
+        # Recalculate indices
         filtered_indices = df_filtered.index.tolist()
         embeddings_filtered = embeddings[filtered_indices]
     else:
@@ -322,13 +367,43 @@ def recommend_movies(
     
     print(f"[Query] Built query: {query}")
     
-    # Encoder la requête
+    # Encode full query
     q_emb = embed_text([query])
     
-    # Calculer similarités
-    sims = cosine_similarity(q_emb, embeddings_filtered)[0]
+    # Calculate full similarities (Title + Description + Genre + Category)
+    full_sims = cosine_similarity(q_emb, embeddings_filtered)[0]
     
-    # Appliquer pondérations si demandé
+    # Calculate description-specific similarity
+    if description:
+        desc_emb = embed_text([description])
+        desc_sims = []
+        for idx, row in df_filtered.iterrows():
+            movie_desc = str(row.get('Description narrative', ''))
+            movie_desc_emb = embed_text([movie_desc])
+            desc_sim = cosine_similarity(desc_emb, movie_desc_emb)[0][0]
+            desc_sims.append(desc_sim)
+        desc_sims = np.array(desc_sims)
+    else:
+        # If no description, use uniform similarity
+        desc_sims = np.full(len(df_filtered), 0.5)
+    
+    # Process similar title using semantic search
+    similar_title_enriched = None
+    if similar_title:
+        similar_title_enriched = process_similar_title(similar_title, df_filtered, embeddings_filtered)
+    
+    # Calculate similar title similarity
+    if similar_title_enriched:
+        similar_emb = embed_text([similar_title_enriched])
+        similar_sims = cosine_similarity(similar_emb, embeddings_filtered)[0]
+    else:
+        # If no similar title, use uniform similarity
+        similar_sims = np.zeros(len(df_filtered))
+    
+    # Normalize genre weights to [0.67, 1.0] range
+    # Original weights: [1.0, 1.5]
+    genre_normalized_weights = np.ones(len(df_filtered))
+    
     if use_weights:
         weights = calculate_likert_weights(
             action_intensity, narrative_complexity,
@@ -337,7 +412,6 @@ def recommend_movies(
         
         # Apply weights to genres (not category)
         # Each movie can have multiple genres separated by commas
-        weighted_sims = []
         for i, (idx, row) in enumerate(df_filtered.iterrows()):
             genre_str = str(row.get('Genre', ''))
             genres_list = [g.strip() for g in genre_str.split(',')]
@@ -348,37 +422,92 @@ def recommend_movies(
                 if genre in weights:
                     max_weight = max(max_weight, weights[genre])
             
-            weighted_sims.append(sims[i] * max_weight)
-        sims = np.array(weighted_sims)
+            # Normalize to 0-1 range (1.0-1.5 → 0.67-1.0)
+            genre_normalized_weights[i] = (max_weight - 0.5) / 1.0
+    
+    # NEW WEIGHTED FORMULA (all Hugging Face embeddings):
+    # SCORE = (FREE_FORM × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE × 0.20) + (ENRICHED_QUERY × 0.30)
+    final_scores = (
+        (desc_sims * 0.25) +
+        (similar_sims * 0.25) +
+        (genre_normalized_weights * 0.20) +
+        (full_sims * 0.30)
+    )
+    
+    print(f"\n[Scoring] Formula: (DESC × 0.25) + (SIMILAR × 0.25) + (GENRE × 0.20) + (QUERY × 0.30)")
+    print(f"[Scoring] All similarities computed using Hugging Face SentenceTransformer (no external APIs)")
     
     # Sort and get top_k
-    top_indices = np.argsort(sims)[::-1][:top_k]
+    top_indices = np.argsort(final_scores)[::-1][:top_k]
     
     # Build results
     recommendations = []
     for idx in top_indices:
         row = df_filtered.iloc[idx]
+        movie_title = str(row.get('Film', ''))
+        movie_genre = str(row.get('Genre', ''))
+        movie_desc = str(row.get('Description narrative', ''))
+        score = float(final_scores[idx])
+        
         recommendations.append({
-            "titre": str(row.get('Film', '')),
-            "année": int(row.get('Année', 0)),
-            "catégorie": str(row.get('Catégorie', '')),
-            "genre": str(row.get('Genre', '')),
+            "title": movie_title,
+            "year": int(row.get('Année', 0)),
+            "category": str(row.get('Catégorie', '')),
+            "genre": movie_genre,
             "blockid": str(row.get('BlockID', '')),
-            "description": str(row.get('Description narrative', '')),
-            "score": float(sims[idx])
+            "description": movie_desc,
+            "score": score
         })
     
-    return recommendations
+    # Generate GenAI-powered personalized justification
+    genai_justification = None
+    if len(recommendations) > 0:
+        # Identify priority elements (lowest contributing factors)
+        scores_breakdown = {
+            "description_similarity": 0.25,
+            "similar_title": 0.25,
+            "genre_preference": 0.20,
+            "enriched_query": 0.30
+        }
+        priority_elements = sorted(scores_breakdown.items(), key=lambda x: x[1])[:2]
+        priority_elements = [elem[0] for elem in priority_elements]
+        
+        try:
+            genai_justification = generate_recommendation_justification(
+                user_preferences={
+                    'description': description,
+                    'similar_title': similar_title,
+                    'action_intensity': action_intensity,
+                    'narrative_complexity': narrative_complexity,
+                    'darkness': darkness,
+                    'realism': realism,
+                    'period': period
+                },
+                recommendations=recommendations[:3],  # Top 3
+                priority_elements=priority_elements
+            )
+        except Exception as e:
+            print(f"GenAI justification error: {e}")
+            genai_justification = None
+    
+    # Add genai_justification to each recommendation
+    for rec in recommendations:
+        rec['justification'] = genai_justification
+    
+    return {
+        "genai_justification": genai_justification,
+        "recommendations": recommendations
+    }
 
 if __name__ == "__main__":
-    print("Construction de l'index des films...")
+    print("Building movie index...")
     df, emb = load_movie_index()
-    print(f"Index construit : {len(df)} films/shows")
+    print(f"Index built: {len(df)} movies/shows")
     
-    # Test de recommandation
-    print("\n=== Test de recommandation ===")
+    # Test recommendation
+    print("\n=== Recommendation Test ===")
     recs = recommend_movies(
-        description="un film dramatique intense avec du suspense",
+        description="intense drama with suspense",
         action_intensity=4,
         narrative_complexity=4,
         darkness=4,
@@ -387,9 +516,11 @@ if __name__ == "__main__":
         top_k=5
     )
     
-    print("\nTop 5 recommandations :")
-    for i, rec in enumerate(recs, 1):
-        print(f"\n{i}. {rec['titre']} ({rec['année']})")
-        print(f"   Catégorie: {rec['catégorie']} | Genre: {rec['genre']}")
+    print("\nTop 5 recommendations:")
+    for i, rec in enumerate(recs['recommendations'], 1):
+        print(f"\n{i}. {rec['title']} ({rec['year']})")
+        print(f"   Category: {rec['category']} | Genre: {rec['genre']}")
         print(f"   Score: {rec['score']:.4f}")
         print(f"   Description: {rec['description'][:100]}...")
+        if rec.get('justification'):
+            print(f"   Justification: {rec['justification']}")

@@ -1,4 +1,4 @@
-// Mise à jour des valeurs des sliders
+// Update slider values
 document.querySelectorAll('input[type="range"]').forEach(slider => {
     const valueDisplay = slider.nextElementSibling;
     
@@ -7,11 +7,11 @@ document.querySelectorAll('input[type="range"]').forEach(slider => {
     });
 });
 
-// Gestion du formulaire
+// Handle form submission
 document.getElementById('recommendationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Récupération des valeurs du formulaire
+    // Get form data
     const formData = {
         description: document.getElementById('description').value,
         similar_title: document.getElementById('similar_title').value,
@@ -22,15 +22,15 @@ document.getElementById('recommendationForm').addEventListener('submit', async (
         period: document.querySelector('input[name="period"]:checked')?.value || null
     };
     
-    // Masquer le formulaire et afficher le loader
+    // Hide form and show loader
     document.querySelector('.form-container').style.display = 'none';
     document.querySelector('.loader-container').classList.add('active');
     
     try {
-        // Afficher le résumé des inputs
+        // Display input summary
         displayInputSummary(formData);
         
-        // Envoi de la requête au backend
+        // Send request to backend
         const response = await fetch('/recommend', {
             method: 'POST',
             headers: {
@@ -40,43 +40,43 @@ document.getElementById('recommendationForm').addEventListener('submit', async (
         });
         
         if (!response.ok) {
-            throw new Error('Erreur lors de la récupération des recommandations');
+            throw new Error('Error retrieving recommendations');
         }
         
         const data = await response.json();
         
-        // Masquer le loader et afficher les résultats
+        // Hide loader and display results
         document.querySelector('.loader-container').classList.remove('active');
-        displayResults(data.recommendations);
+        displayResults(data.recommendations, data.genai_justification);
         
     } catch (error) {
-        console.error('Erreur:', error);
-        alert('Une erreur est survenue. Veuillez réessayer.');
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
         document.querySelector('.loader-container').classList.remove('active');
         document.querySelector('.form-container').style.display = 'block';
     }
 });
 
-// Affichage du résumé des inputs
+// Display input summary
 function displayInputSummary(formData) {
     const summaryContainer = document.getElementById('summaryContent');
     const inputSummary = document.getElementById('inputSummary');
     
     const periodLabels = {
-        'present-2020': 'Présent - 2020',
+        'present-2020': 'Present - 2020',
         '2020-2015': '2020 - 2015',
         '2015-2010': '2015 - 2010',
         '2010-2000': '2010 - 2000',
         '2000-1980': '2000 - 1980',
-        '<1980': '< 1980'
+        '<1980': 'Before 1980'
     };
     
     const scaleDescriptions = {
-        1: '1 - Très peu',
-        2: '2 - Peu',
-        3: '3 - Modéré',
-        4: '4 - Beaucoup',
-        5: '5 - Énormément'
+        1: '1 - Very little',
+        2: '2 - Little',
+        3: '3 - Moderate',
+        4: '4 - A lot',
+        5: '5 - Very much'
     };
     
     summaryContainer.innerHTML = '';
@@ -89,11 +89,11 @@ function displayInputSummary(formData) {
         summaryContainer.appendChild(descItem);
     }
     
-    // Film similaire
+    // Similar movie
     if (formData.similar_title) {
         const similarItem = document.createElement('div');
         similarItem.className = 'summary-item';
-        similarItem.innerHTML = `<span class="summary-label">🎬 Film similaire:</span><span class="summary-value">${formData.similar_title}</span>`;
+        similarItem.innerHTML = `<span class="summary-label">🎬 Similar movie:</span><span class="summary-value">${formData.similar_title}</span>`;
         summaryContainer.appendChild(similarItem);
     }
     
@@ -103,41 +103,64 @@ function displayInputSummary(formData) {
     actionItem.innerHTML = `<span class="summary-label">⚡ Action:</span><span class="summary-value">${scaleDescriptions[formData.action_intensity]}</span>`;
     summaryContainer.appendChild(actionItem);
     
-    // Complexité
+    // Complexity
     const complexityItem = document.createElement('div');
     complexityItem.className = 'summary-item';
-    complexityItem.innerHTML = `<span class="summary-label">🧩 Complexité:</span><span class="summary-value">${scaleDescriptions[formData.narrative_complexity]}</span>`;
+    complexityItem.innerHTML = `<span class="summary-label">🧩 Complexity:</span><span class="summary-value">${scaleDescriptions[formData.narrative_complexity]}</span>`;
     summaryContainer.appendChild(complexityItem);
     
-    // Noirceur
+    // Darkness
     const darknessItem = document.createElement('div');
     darknessItem.className = 'summary-item';
-    darknessItem.innerHTML = `<span class="summary-label">🌑 Noirceur:</span><span class="summary-value">${scaleDescriptions[formData.darkness]}</span>`;
+    darknessItem.innerHTML = `<span class="summary-label">🌑 Darkness:</span><span class="summary-value">${scaleDescriptions[formData.darkness]}</span>`;
     summaryContainer.appendChild(darknessItem);
     
-    // Réalisme
+    // Realism
     const realismItem = document.createElement('div');
     realismItem.className = 'summary-item';
-    realismItem.innerHTML = `<span class="summary-label">🎭 Réalisme:</span><span class="summary-value">${scaleDescriptions[formData.realism]}</span>`;
+    realismItem.innerHTML = `<span class="summary-label">🎭 Realism:</span><span class="summary-value">${scaleDescriptions[formData.realism]}</span>`;
     summaryContainer.appendChild(realismItem);
     
-    // Période
+    // Period
     if (formData.period) {
         const periodItem = document.createElement('div');
         periodItem.className = 'summary-item';
-        periodItem.innerHTML = `<span class="summary-label">📅 Période:</span><span class="summary-value">${periodLabels[formData.period] || formData.period}</span>`;
+        periodItem.innerHTML = `<span class="summary-label">📅 Period:</span><span class="summary-value">${periodLabels[formData.period] || formData.period}</span>`;
         summaryContainer.appendChild(periodItem);
     }
     
     inputSummary.style.display = 'block';
 }
 
-// Affichage des résultats
-function displayResults(recommendations) {
+// Display results
+function displayResults(recommendations, genaiJustification) {
     const resultsContainer = document.querySelector('.results-container');
     const resultsContent = document.getElementById('results-content');
     
     resultsContent.innerHTML = '';
+    
+    // Display GenAI justification if available
+    if (genaiJustification) {
+        const justificationBox = document.createElement('div');
+        justificationBox.className = 'genai-justification-box';
+        justificationBox.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <span style="font-size: 24px;">💡</span>
+                <div>
+                    <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #6366f1;">Why these recommendations?</h3>
+                    <p style="margin: 0; line-height: 1.6; color: #374151; font-size: 14px;">${genaiJustification}</p>
+                </div>
+            </div>
+        `;
+        resultsContent.appendChild(justificationBox);
+        
+        // Add a divider
+        const divider = document.createElement('div');
+        divider.style.height = '2px';
+        divider.style.background = 'linear-gradient(to right, transparent, #e5e7eb, transparent)';
+        divider.style.margin = '20px 0';
+        resultsContent.appendChild(divider);
+    }
     
     recommendations.forEach((movie, index) => {
         const movieCard = document.createElement('div');
@@ -147,9 +170,9 @@ function displayResults(recommendations) {
             <div style="display: flex; align-items: flex-start;">
                 <span class="movie-rank">${index + 1}</span>
                 <div style="flex: 1;">
-                    <h3 class="movie-title">${movie.titre} (${movie.année})</h3>
+                    <h3 class="movie-title">${movie.title} (${movie.year})</h3>
                     <div class="movie-info">
-                        <span>📁 ${movie.catégorie}</span>
+                        <span>📁 ${movie.category}</span>
                         <span>🎭 ${movie.genre}</span>
                         <span class="movie-score">⭐ Score: ${movie.score.toFixed(4)}</span>
                     </div>
@@ -164,14 +187,14 @@ function displayResults(recommendations) {
     resultsContainer.classList.add('active');
 }
 
-// Bouton retour
+// Back button
 document.getElementById('backBtn').addEventListener('click', () => {
     document.querySelector('.results-container').classList.remove('active');
     document.getElementById('inputSummary').style.display = 'none';
     document.querySelector('.form-container').style.display = 'block';
     document.getElementById('recommendationForm').reset();
     
-    // Réinitialiser les valeurs affichées des sliders
+    // Reset slider display values
     document.querySelectorAll('input[type="range"]').forEach(slider => {
         slider.nextElementSibling.textContent = slider.value;
     });

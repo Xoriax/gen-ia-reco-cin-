@@ -304,6 +304,24 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
+.genai-justification-box {
+    background: linear-gradient(135deg, #f0f4ff 0%, #f3e8ff 100%);
+    border: 2px solid #d9cff0;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-left: 5px solid #6366f1;
+}
+
+.genai-justification-box h3 {
+    color: #4f46e5;
+}
+
+.genai-justification-box p {
+    color: #4b5563;
+    font-weight: 500;
+}
+
 .movie-rank {
     display: inline-block;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
