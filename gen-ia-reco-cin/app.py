@@ -59,7 +59,7 @@ def recommend():
             darkness=darkness,
             realism=realism,
             period=period,
-            top_k=3,  # EF3.2: Top 3 recommendations
+            top_k=5,  # EF3.2: Top 5 recommendations
             use_weights=True,
             enable_augmentation=True  # EF4.1 enabled
         )

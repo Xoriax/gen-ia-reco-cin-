@@ -389,8 +389,14 @@ def recommend_movies(
     
     # Process similar title using semantic search
     similar_title_enriched = None
+    similar_title_index = None  # Store index of the input similar title to exclude it later
     if similar_title:
         similar_title_enriched = process_similar_title(similar_title, df_filtered, embeddings_filtered)
+        
+        # Find the exact similar title in the dataset to exclude it from results
+        query_emb = embed_text([similar_title])
+        title_similarities = cosine_similarity(query_emb, embeddings_filtered)[0]
+        similar_title_index = np.argmax(title_similarities)  # Get the closest match
     
     # Calculate similar title similarity
     if similar_title_enriched:
@@ -437,8 +443,15 @@ def recommend_movies(
     print(f"\n[Scoring] Formula: (DESC × 0.25) + (SIMILAR × 0.25) + (GENRE × 0.20) + (QUERY × 0.30)")
     print(f"[Scoring] All similarities computed using Hugging Face SentenceTransformer (no external APIs)")
     
-    # Sort and get top_k
-    top_indices = np.argsort(final_scores)[::-1][:top_k]
+    # Sort by scores (descending)
+    sorted_indices = np.argsort(final_scores)[::-1]
+    
+    # Exclude the similar_title movie from recommendations if it was provided
+    if similar_title_index is not None:
+        sorted_indices = [idx for idx in sorted_indices if idx != similar_title_index]
+    
+    # Get top_k after exclusion
+    top_indices = sorted_indices[:top_k]
     
     # Build results
     recommendations = []
