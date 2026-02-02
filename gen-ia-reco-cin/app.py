@@ -5,11 +5,17 @@ Integrates both web interface and interactive CLI into one application
 from flask import Flask, render_template, request, jsonify
 import sys
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.recommender.movie_recommender import recommend_movies, load_movie_index
+from src.services.tmdb_service import fetch_movie_poster
 
 app = Flask(__name__)
 
@@ -67,6 +73,16 @@ def recommend():
         # Extract recommendations and GenAI justification
         recommendations = result.get('recommendations', result) if isinstance(result, dict) and 'recommendations' in result else result
         genai_justification = result.get('genai_justification') if isinstance(result, dict) else None
+        
+        # Fetch TMDB posters for each recommendation
+        print("\n🖼️  Fetching movie posters from TMDB...")
+        for rec in recommendations:
+            poster_url = fetch_movie_poster(rec['title'], rec['year'])
+            rec['poster_url'] = poster_url
+            if poster_url:
+                print(f"  ✓ {rec['title']}: {poster_url}")
+            else:
+                print(f"  ⚠️ No poster found for: {rec['title']}")
         
         print("\n🎯 RECOMMENDATIONS:")
         for i, rec in enumerate(recommendations, 1):

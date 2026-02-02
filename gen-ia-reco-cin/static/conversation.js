@@ -363,16 +363,41 @@ class ConversationalQuiz {
         recommendations.forEach((movie, index) => {
             const card = document.createElement('div');
             card.className = 'movie-card';
+            
+            // Build poster image HTML if available
+            let posterHtml = '';
+            if (movie.poster_url) {
+                posterHtml = `
+                    <div class="movie-poster-container">
+                        <img 
+                            src="${movie.poster_url}" 
+                            alt="${movie.title} poster" 
+                            class="movie-poster"
+                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2214%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3ENo Poster%3C/text%3E%3C/svg%3E'"
+                        />
+                    </div>
+                `;
+            } else {
+                posterHtml = `
+                    <div class="movie-poster-container placeholder">
+                        <div class="no-poster-icon">🎬</div>
+                    </div>
+                `;
+            }
+            
             card.innerHTML = `
-                <div class="movie-rank">${index + 1}</div>
-                <h3 class="movie-title">${movie.title}</h3>
-                <div class="movie-year">📅 ${movie.year}</div>
-                <div class="movie-info">
-                    <span>📁 ${movie.category}</span>
-                    <span>🎭 ${movie.genre}</span>
-                    <span class="movie-score">⭐ ${movie.score.toFixed(2)}</span>
+                ${posterHtml}
+                <div class="movie-details">
+                    <div class="movie-rank">${index + 1}</div>
+                    <h3 class="movie-title">${movie.title}</h3>
+                    <div class="movie-year">📅 ${movie.year}</div>
+                    <div class="movie-info">
+                        <span>📁 ${movie.category}</span>
+                        <span>🎭 ${movie.genre}</span>
+                        <span class="movie-score">⭐ ${movie.score.toFixed(2)}</span>
+                    </div>
+                    <p class="movie-description">${movie.description}</p>
                 </div>
-                <p class="movie-description">${movie.description}</p>
             `;
             grid.appendChild(card);
         });
