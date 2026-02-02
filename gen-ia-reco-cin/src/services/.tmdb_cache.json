@@ -26,5 +26,33 @@
   "The Owl House_2020": {
     "poster_path": null,
     "timestamp": "2026-02-02T11:10:39.269488"
+  },
+  "The Vietnam War_2017": {
+    "poster_path": "/b1rkG9lXJLoGsax47QHsZv1H5pV.jpg",
+    "tmdb_id": 490121,
+    "title": "Reflections on the Vietnam War",
+    "timestamp": "2026-02-02T22:32:51.028012"
+  },
+  "My Way_2011": {
+    "poster_path": "/3moPqIC1EBFilLI3YJNa5Nfel3e.jpg",
+    "tmdb_id": 94047,
+    "title": "My Way",
+    "timestamp": "2026-02-02T22:32:51.317035"
+  },
+  "1917_2019": {
+    "poster_path": "/iZf0KyrE25z1sage4SYFLCCrMi9.jpg",
+    "tmdb_id": 530915,
+    "title": "1917",
+    "timestamp": "2026-02-02T22:32:51.605139"
+  },
+  "Tae Guk Gi: The Brotherhood of War_2004": {
+    "poster_path": "/vyG8qpimh3XSlxc6OmPq8LJRJl.jpg",
+    "tmdb_id": 11658,
+    "title": "Tae Guk Gi: The Brotherhood of War",
+    "timestamp": "2026-02-02T22:32:51.887653"
+  },
+  "MobLand_2025": {
+    "poster_path": null,
+    "timestamp": "2026-02-02T22:32:52.166708"
   }
 }
