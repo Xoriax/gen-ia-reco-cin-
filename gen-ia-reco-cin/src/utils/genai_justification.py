@@ -138,6 +138,95 @@ def _score_to_confidence(score: float) -> str:
     else:
         return "reasonably"
 
+def _paraphrase_user_request(description: str) -> str:
+    """
+    Create a concise paraphrase of the user's free-form description.
+    Instead of truncating, summarizes key themes.
+    
+    Args:
+        description: User's full description text
+        
+    Returns:
+        Paraphrased summary (50-80 chars) of key request elements
+        
+    Example:
+        >>> long_desc = "I want a mind-bending sci-fi action movie that questions the nature of reality..."
+        >>> _paraphrase_user_request(long_desc)
+        "mind-bending sci-fi action with philosophical themes"
+    """
+    if not description:
+        return ""
+    
+    description_lower = description.lower()
+    
+    # Extract key elements with priority
+    genres = []
+    themes = []
+    
+    # Genre/style indicators (primary)
+    if 'sci-fi' in description_lower or 'science fiction' in description_lower:
+        genres.append('sci-fi')
+    if 'war' in description_lower and 'movie' in description_lower:
+        genres.append('war')
+    if 'action' in description_lower:
+        genres.append('action')
+    if 'horror' in description_lower:
+        genres.append('horror')
+    if 'comedy' in description_lower:
+        genres.append('comedy')
+    if 'thriller' in description_lower:
+        genres.append('thriller')
+    if 'drama' in description_lower:
+        genres.append('drama')
+    
+    # Tone/mood indicators (secondary)
+    if 'mind-bending' in description_lower:
+        themes.append('mind-bending')
+    if 'dark' in description_lower or 'gritty' in description_lower:
+        themes.append('dark/gritty')
+    if 'intense' in description_lower or 'high-octane' in description_lower:
+        themes.append('intense')
+    if 'psychological' in description_lower:
+        themes.append('psychological')
+    if 'philosophical' in description_lower:
+        themes.append('philosophical')
+    if 'stylized' in description_lower or 'cinematic' in description_lower:
+        themes.append('stylized cinematic')
+    
+    # Specific themes (tertiary)
+    if 'reality' in description_lower or 'simulation' in description_lower:
+        themes.append('reality-bending')
+    if 'ai' in description_lower or 'machine' in description_lower:
+        themes.append('AI/machines')
+    if 'martial arts' in description_lower or 'gun-fu' in description_lower:
+        themes.append('martial arts')
+    if 'dystopian' in description_lower:
+        themes.append('dystopian')
+    
+    # Build paraphrase
+    paraphrase_parts = []
+    
+    # Add genres first
+    if len(genres) > 0:
+        paraphrase_parts.append(' '.join(genres))
+    
+    # Add top themes
+    if len(themes) > 0:
+        if len(paraphrase_parts) > 0:
+            paraphrase_parts.append('with')
+        paraphrase_parts.extend(themes[:2])
+    
+    if len(paraphrase_parts) == 0:
+        return "films matching your preferences"
+    
+    paraphrase = " ".join(paraphrase_parts)
+    
+    # Ensure it's not too long
+    if len(paraphrase) > 80:
+        paraphrase = paraphrase[:77] + "..."
+    
+    return paraphrase
+
 def generate_recommendation_justification(
     user_preferences: Dict,
     recommendations: List[Dict],
@@ -180,6 +269,9 @@ def generate_recommendation_justification(
         top_genre = top_rec.get('genre', 'Drama').split(',')[0].strip()
         top_year = top_rec.get('year', 'N/A')
         
+        # Create paraphrased user request instead of truncating
+        user_paraphrase = _paraphrase_user_request(user_description)
+        
         # Build justification based on actual user request and results
         if wants_war:
             main_justification = f"Based on your request for a high-octane war film with intense combat and psychological depth, "
@@ -188,10 +280,10 @@ def generate_recommendation_justification(
             main_justification += f"scoring {top_score:.1%} on our recommendation metrics across description alignment and your preference for dark, "
             main_justification += f"violent storytelling."
         else:
-            # Generic fallback
+            # Use paraphrased description instead of truncation
             main_justification = f"'{top_title}' ({top_year}) aligns well with your cinematic preferences, "
             main_justification += f"scoring {top_score:.1%} across our recommendation metrics. "
-            main_justification += f"As a {top_genre} film, it resonates with your request for {user_description[:50]}..."
+            main_justification += f"As a {top_genre} film, it resonates with your request for {user_paraphrase}."
         
         # Add complementary recommendation if available
         if len(recommendations) >= 2:
@@ -220,4 +312,5 @@ def generate_recommendation_justification(
     except Exception as e:
         print(f"⚠️ Error in EF4.3 justification generation: {e}")
         return None
+
 

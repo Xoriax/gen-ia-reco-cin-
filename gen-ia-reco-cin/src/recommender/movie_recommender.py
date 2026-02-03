@@ -27,7 +27,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"
 _MODEL: Optional[SentenceTransformer] = None
 DEFAULT_CSV = Path(__file__).resolve().parents[1] / "data" / "movies.csv"
 DEFAULT_PICKLE = Path(__file__).resolve().parents[1] / "data" / "referentiel_movies.pkl"
-
+# model sBERT
 def get_model() -> SentenceTransformer:
     global _MODEL
     if _MODEL is None:
