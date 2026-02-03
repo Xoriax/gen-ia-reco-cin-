@@ -26,7 +26,7 @@ def get_model() -> SentenceTransformer:
 def embed_text(texts: List[str]) -> np.ndarray:
     """Encode text(s) to embeddings."""
     model = get_model()
-    return model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
+    return np.asarray(model.encode(texts, show_progress_bar=False, convert_to_numpy=True))
 
 def find_similar_movies_in_dataset(
     query_title: str,
@@ -86,7 +86,7 @@ def find_similar_movies_in_dataset(
         })
         count += 1
     
-    print(f"   ✓ Found {len(similar_movies)} similar movies")
+    print(f"   [OK] Found {len(similar_movies)} similar movies")
     for i, movie in enumerate(similar_movies[:3], 1):
         print(f"     {i}. {movie['title']} ({movie['year']}) - Similarity: {movie['similarity']:.1%}")
     

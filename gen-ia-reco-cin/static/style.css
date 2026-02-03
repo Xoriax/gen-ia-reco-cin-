@@ -6,22 +6,23 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #0f172a;
     min-height: 100vh;
     padding: 20px;
+    color: #e2e8f0;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
+    background: #1e293b;
     border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     overflow: hidden;
 }
 
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     color: white;
     padding: 30px;
     text-align: center;
@@ -46,7 +47,7 @@ body {
 }
 
 .form-section h2 {
-    color: #667eea;
+    color: #60a5fa;
     font-size: 1.5rem;
     margin-bottom: 15px;
     display: flex;
@@ -58,14 +59,14 @@ body {
     content: '';
     width: 4px;
     height: 24px;
-    background: #667eea;
+    background: #60a5fa;
     border-radius: 2px;
 }
 
 label {
     display: block;
     margin-bottom: 8px;
-    color: #333;
+    color: #cbd5e1;
     font-weight: 500;
 }
 
@@ -74,19 +75,21 @@ textarea,
 select {
     width: 100%;
     padding: 12px 15px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #334155;
     border-radius: 10px;
     font-size: 1rem;
     transition: all 0.3s ease;
     font-family: inherit;
+    background: #0f172a;
+    color: #e2e8f0;
 }
 
 input[type="text"]:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
 textarea {

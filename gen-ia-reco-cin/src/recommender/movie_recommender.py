@@ -294,14 +294,201 @@ def process_similar_title(similar_title: str, df: pd.DataFrame, embeddings: np.n
     )
     
     if not similar_movies:
-        print(f"   ⚠️  No similar movies found in dataset")
+        print(f"   [WARNING] No similar movies found in dataset")
         return None
     
     # Aggregate descriptions from found similar movies
     aggregated_context = aggregate_similar_movies_context(similar_movies, max_descriptions=3)
-    print(f"   ✓ Aggregated context from {len(similar_movies)} similar movies")
+    print(f"   [OK] Aggregated context from {len(similar_movies)} similar movies")
     
     return aggregated_context
+
+def extract_explicit_genres(description: str) -> Optional[List[str]]:
+    """
+    Extract explicitly mentioned genres from user description.
+    Prioritizes PRIMARY genres (explicitly named) over inferred genres from action words.
+    
+    Args:
+        description: User's description text
+    
+    Returns:
+        List of genres mentioned or None
+    
+    Example:
+        >>> extract_explicit_genres("I want to watch a war movie")
+        ['War']
+        >>> extract_explicit_genres("sci-fi action movie")
+        ['Science Fiction', 'Action']
+        >>> extract_explicit_genres("sci-fi with martial arts combat")  # Won't infer 'War'
+        ['Science Fiction', 'Action']
+    """
+    if not description:
+        return None
+    
+    description_lower = description.lower()
+    
+    # PRIMARY genres - explicitly mentioned genre names (high priority)
+    primary_genres = {
+        'science fiction': ['sci-fi', 'scifi', 'science fiction', 'futuristic'],
+        'horror': ['horror', 'scary', 'terror'],
+        'fantasy': ['fantasy', 'magical', 'magic'],
+        'comedy': ['comedy', 'funny', 'humor', 'humorous', 'laugh'],
+        'romance': ['romance', 'romantic', 'love story'],
+        'drama': ['dramatic', 'character-driven'],
+        'thriller': ['thriller', 'suspense', 'suspenseful'],
+        'animation': ['animation', 'animated', 'cartoon'],
+        'documentary': ['documentary', 'doc', 'documental'],
+        'crime': ['crime', 'criminal', 'detective'],
+        'mystery': ['mystery', 'mysterious'],
+        'family': ['family', 'kids', 'children'],
+        'western': ['western', 'cowboy'],
+        'war': ['war movie', 'war film', 'military film', 'wartime', 'battlefield', 'soldier'],  # War must be explicit
+        'action': ['action movie', 'action film', 'action-packed']
+    }
+    
+    # SECONDARY genres - inferred from context (only if primary genre not found)
+    secondary_genres = {
+        'action': ['fight', 'explosive', 'adventure', 'combat', 'martial arts'],
+        'drama': ['emotional', 'serious'],
+        'thriller': ['intense', 'suspenseful']
+    }
+    
+    found_genres = []
+    
+    # First pass: extract PRIMARY genres (explicitly named)
+    for genre, keywords in primary_genres.items():
+        for keyword in keywords:
+            if keyword in description_lower:
+                genre_capitalized = genre.title() if ' ' not in genre else genre
+                if genre == 'science fiction':
+                    genre_capitalized = 'Science Fiction'
+                found_genres.append(genre_capitalized)
+                break
+    
+    # Second pass: only add secondary genres if no primary genre found
+    # This prevents inferring "War" from "combat" when user asked for sci-fi
+    if not found_genres or len(found_genres) < 2:
+        for genre, keywords in secondary_genres.items():
+            if genre.title() not in found_genres:  # Don't duplicate
+                for keyword in keywords:
+                    if keyword in description_lower:
+                        genre_capitalized = genre.title()
+                        found_genres.append(genre_capitalized)
+                        break
+    
+    # Special handling: if user mentions sci-fi/fantasy, don't infer War from combat
+    if any(g in found_genres for g in ['Science Fiction', 'Fantasy']):
+        found_genres = [g for g in found_genres if g != 'War']
+    
+    return found_genres if found_genres else None
+
+def extract_rejected_genres(description: str) -> Optional[List[str]]:
+    """
+    Extract explicitly rejected genres from user description.
+    Looks for phrases like "not X", "rather than X", "don't want X", "avoid X", etc.
+    
+    Args:
+        description: User's description text
+    
+    Returns:
+        List of rejected genres or None
+    
+    Example:
+        >>> extract_rejected_genres("I want action, not comedy")
+        ['Comedy']
+        >>> extract_rejected_genres("I prefer dramatic rather than documentary-style")
+        ['Documentary']
+    """
+    if not description:
+        return None
+    
+    description_lower = description.lower()
+    
+    # Rejection phrases with associated genres
+    rejection_patterns = {
+        'documentary': [
+            'not a documentary',
+            'not documentary',
+            'rather than documentary',
+            'not slow-paced documentary',
+            'avoid documentary',
+            'documentary-style',
+            'don\'t want documentary'
+        ],
+        'comedy': [
+            'not a comedy',
+            'not comedy',
+            'rather than comedy',
+            'avoid comedy',
+            'don\'t want comedy'
+        ],
+        'family': [
+            'not family',
+            'not family-friendly',
+            'avoid family',
+            'don\'t want family'
+        ],
+        'animation': [
+            'not animated',
+            'not animation',
+            'avoid animation'
+        ]
+    }
+    
+    rejected_genres = []
+    for genre, patterns in rejection_patterns.items():
+        for pattern in patterns:
+            if pattern in description_lower:
+                genre_capitalized = genre.title()
+                if genre == 'documentary':
+                    genre_capitalized = 'Documentary'
+                rejected_genres.append(genre_capitalized)
+                break
+    
+    return rejected_genres if rejected_genres else None
+
+def filter_by_genres(df: pd.DataFrame, genres: List[str], excluded_genres: List[str] = None) -> pd.DataFrame:
+    """
+    Filter movies to only include those with specified genres AND exclude rejected genres.
+    A movie is included if it contains ANY of the specified genres AND NONE of the excluded genres.
+    
+    Args:
+        df: Movies dataframe
+        genres: List of genres to filter by (INCLUDE)
+        excluded_genres: List of genres to exclude (EXCLUDE)
+    
+    Returns:
+        Filtered dataframe
+    """
+    if not genres:
+        return df
+    
+    # For each movie, check if ANY of its genres match (INCLUDE)
+    mask_include = df['Genre'].apply(
+        lambda genre_str: any(
+            genre in str(genre_str) 
+            for genre in genres
+        )
+    )
+    
+    # If excluded genres specified, also check that NONE of them are present
+    if excluded_genres:
+        mask_exclude = df['Genre'].apply(
+            lambda genre_str: not any(
+                genre in str(genre_str) 
+                for genre in excluded_genres
+            )
+        )
+        mask = mask_include & mask_exclude
+        print(f"[GENRE FILTER] Filtered to {mask.sum()} movies with genres: {', '.join(genres)}")
+        print(f"[GENRE FILTER] Excluded genres: {', '.join(excluded_genres)}")
+    else:
+        mask = mask_include
+        print(f"[GENRE FILTER] Filtered to {mask.sum()} movies with genres: {', '.join(genres)}")
+    
+    filtered = df[mask]
+    
+    return filtered
 
 def recommend_movies(
     description: str = "",
@@ -319,7 +506,10 @@ def recommend_movies(
     Recommend specific movies/TV shows based on user criteria.
     
     Uses weighted scoring formula:
-    SCORE_FINAL = (FREE_FORM × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE_WEIGHT × 0.20) + (COSINE × 0.30)
+    - If SIMILAR_TITLE provided: (DESC × 0.45) + (SIMILAR × 0.20) + (LIKERT × 0.35)
+    - If SIMILAR_TITLE NOT provided: (DESC × 0.65) + (LIKERT × 0.35)
+    
+    LIKERT = genre preference based on user's Likert scale preferences (action, complexity, darkness, realism)
     
     All similarity calculations use Hugging Face SentenceTransformer embeddings (no external APIs).
     
@@ -344,6 +534,44 @@ def recommend_movies(
     
     # Load index
     df, embeddings = load_movie_index()
+    
+    # Extract explicit genres AND rejected genres from description (NEW: HARD FILTER)
+    explicit_genres = extract_explicit_genres(description)
+    rejected_genres = extract_rejected_genres(description)
+    
+    if explicit_genres:
+        # If "War" is in the requested genres, prioritize it
+        primary_genre = None
+        if 'War' in explicit_genres:
+            primary_genre = 'War'
+            print(f"[GENRE FILTER] Primary genre detected: {primary_genre}")
+        
+        # First, try to filter by primary genre if it exists
+        if primary_genre:
+            df_primary = filter_by_genres(df, [primary_genre], excluded_genres=rejected_genres)
+            if len(df_primary) > 0:
+                df = df_primary
+                # Recalculate embeddings for filtered dataset
+                filtered_indices = df.index.tolist()
+                embeddings = embeddings[filtered_indices]
+            else:
+                # If no primary genre movies, fall back to all requested genres
+                df = filter_by_genres(df, explicit_genres, excluded_genres=rejected_genres)
+                if len(df) == 0:
+                    print(f"[WARNING] No movies found with genres: {explicit_genres} (excluding: {rejected_genres})")
+                    df, embeddings = load_movie_index()
+                else:
+                    filtered_indices = df.index.tolist()
+                    embeddings = embeddings[filtered_indices]
+        else:
+            # No primary genre, use all requested genres
+            df = filter_by_genres(df, explicit_genres, excluded_genres=rejected_genres)
+            if len(df) == 0:
+                print(f"[WARNING] No movies found with genres: {explicit_genres} (excluding: {rejected_genres})")
+                df, embeddings = load_movie_index()
+            else:
+                filtered_indices = df.index.tolist()
+                embeddings = embeddings[filtered_indices]
     
     # Filter by period if specified
     if period:
@@ -406,9 +634,9 @@ def recommend_movies(
         # If no similar title, use uniform similarity
         similar_sims = np.zeros(len(df_filtered))
     
-    # Normalize genre weights to [0.67, 1.0] range
-    # Original weights: [1.0, 1.5]
-    genre_normalized_weights = np.ones(len(df_filtered))
+    # Calculate LIKERT-based genre weights to [0.67, 1.0] range
+    # LIKERT scales determine genre preference (action, complexity, darkness, realism)
+    likert_weights = np.ones(len(df_filtered))
     
     if use_weights:
         weights = calculate_likert_weights(
@@ -429,18 +657,30 @@ def recommend_movies(
                     max_weight = max(max_weight, weights[genre])
             
             # Normalize to 0-1 range (1.0-1.5 → 0.67-1.0)
-            genre_normalized_weights[i] = (max_weight - 0.5) / 1.0
+            likert_weights[i] = (max_weight - 0.5) / 1.0
     
-    # NEW WEIGHTED FORMULA (all Hugging Face embeddings):
-    # SCORE = (FREE_FORM × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE × 0.20) + (ENRICHED_QUERY × 0.30)
-    final_scores = (
-        (desc_sims * 0.25) +
-        (similar_sims * 0.25) +
-        (genre_normalized_weights * 0.20) +
-        (full_sims * 0.30)
-    )
+    # REVISED WEIGHTED FORMULA (all Hugging Face embeddings):
+    # SCORE = (DESC × 0.45) + (SIMILAR × 0.20 if filled else 0) + (LIKERT × 0.35)
+    # If SIMILAR is not filled, its 0.20 weight goes to DESC (DESC becomes 0.65)
+    # LIKERT = genre preference based on user's Likert scale preferences
     
-    print(f"\n[Scoring] Formula: (DESC × 0.25) + (SIMILAR × 0.25) + (GENRE × 0.20) + (QUERY × 0.30)")
+    if similar_title:
+        # SIMILAR_TITLE was provided: use standard formula
+        final_scores = (
+            (desc_sims * 0.45) +
+            (similar_sims * 0.20) +
+            (likert_weights * 0.35)
+        )
+        formula_display = "(DESC × 0.45) + (SIMILAR × 0.20) + (LIKERT × 0.35)"
+    else:
+        # SIMILAR_TITLE was NOT provided: redistribute its weight to DESC
+        final_scores = (
+            (desc_sims * 0.65) +
+            (likert_weights * 0.35)
+        )
+        formula_display = "(DESC × 0.65) + (LIKERT × 0.35)  [SIMILAR not provided]"
+    
+    print(f"\n[Scoring] Formula: {formula_display}")
     print(f"[Scoring] All similarities computed using Hugging Face SentenceTransformer (no external APIs)")
     
     # Sort by scores (descending)
@@ -475,13 +715,18 @@ def recommend_movies(
     # Generate GenAI-powered personalized justification
     genai_justification = None
     if len(recommendations) > 0:
-        # Identify priority elements (lowest contributing factors)
-        scores_breakdown = {
-            "description_similarity": 0.25,
-            "similar_title": 0.25,
-            "genre_preference": 0.20,
-            "enriched_query": 0.30
-        }
+        # Identify priority elements based on the actual scoring formula used
+        if similar_title:
+            scores_breakdown = {
+                "description_similarity": 0.45,
+                "similar_title": 0.20,
+                "likert_scales": 0.35
+            }
+        else:
+            scores_breakdown = {
+                "description_similarity": 0.65,
+                "likert_scales": 0.35
+            }
         priority_elements = sorted(scores_breakdown.items(), key=lambda x: x[1])[:2]
         priority_elements = [elem[0] for elem in priority_elements]
         

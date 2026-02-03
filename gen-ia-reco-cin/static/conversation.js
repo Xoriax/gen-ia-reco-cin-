@@ -103,11 +103,6 @@ class ConversationalQuiz {
         const nextBtn = document.getElementById('nextBtn');
         const backBtn = document.getElementById('backBtn');
 
-        // Update progress
-        const progress = Math.round(((this.currentStep + 1) / this.steps.length) * 100);
-        document.querySelector('.conversation-container').style.backgroundImage = 
-            `linear-gradient(to right, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.1) ${progress}%, transparent ${progress}%, transparent 100%)`;
-
         // Update question text
         questionText.textContent = step.question;
         questionSubtext.textContent = step.subtext;

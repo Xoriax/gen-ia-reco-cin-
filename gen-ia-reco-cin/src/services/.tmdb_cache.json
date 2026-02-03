@@ -54,5 +54,135 @@
   "MobLand_2025": {
     "poster_path": null,
     "timestamp": "2026-02-02T22:32:52.166708"
+  },
+  "Paths of Glory_1957": {
+    "poster_path": "/p7OHwomA8UOhe3EhckF2IetBTh9.jpg",
+    "tmdb_id": 975,
+    "title": "Paths of Glory",
+    "timestamp": "2026-02-03T09:21:58.247808"
+  },
+  "Apocalypse Now_1979": {
+    "poster_path": "/gQB8Y5RCMkv2zwzFHbUJX3kAhvA.jpg",
+    "tmdb_id": 28,
+    "title": "Apocalypse Now",
+    "timestamp": "2026-02-03T09:21:58.725933"
+  },
+  "Band of Brothers_2001": {
+    "poster_path": "/u9C6q5DXJRxmkEt81FaRVuhgzfF.jpg",
+    "tmdb_id": 1335757,
+    "title": "The Making of 'Band of Brothers'",
+    "timestamp": "2026-02-03T09:21:59.170750"
+  },
+  "We All Loved Each Other So Much_1974": {
+    "poster_path": "/zGGWYpiKNwjpKxelPxOMqJnUgDs.jpg",
+    "tmdb_id": 42269,
+    "title": "We All Loved Each Other So Much",
+    "timestamp": "2026-02-03T09:21:59.673224"
+  },
+  "Counterattack_2025": {
+    "poster_path": "/38I76hGcFY6xB47pjm7pZwkfuAF.jpg",
+    "tmdb_id": 1356039,
+    "title": "Counterattack",
+    "timestamp": "2026-02-03T09:22:00.100407"
+  },
+  "Come and See_1985": {
+    "poster_path": "/qNbMsKVzigERgJUbwf8pKyZogpb.jpg",
+    "tmdb_id": 25237,
+    "title": "Come and See",
+    "timestamp": "2026-02-03T10:53:01.419054"
+  },
+  "Planet Earth II_2016": {
+    "poster_path": "/qV9T4ORVpwgF5e2BPy5Ev7v8UWj.jpg",
+    "tmdb_id": 596683,
+    "title": "Planet Earth II: A World of Wonder",
+    "timestamp": "2026-02-03T10:58:43.210220"
+  },
+  "Avengers: Endgame_2019": {
+    "poster_path": "/ulzhLuWrPK07P1YkdWQLZnQh1JL.jpg",
+    "tmdb_id": 299534,
+    "title": "Avengers: Endgame",
+    "timestamp": "2026-02-03T10:58:43.739913"
+  },
+  "Avengers: Infinity War_2018": {
+    "poster_path": "/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
+    "tmdb_id": 299536,
+    "title": "Avengers: Infinity War",
+    "timestamp": "2026-02-03T10:58:44.264370"
+  },
+  "Chernobyl_2019": {
+    "poster_path": "/hGC5xkkwYyof5nafqRClBPF2RSW.jpg",
+    "tmdb_id": 793445,
+    "title": "Chernobyl: Zone of Exclusion",
+    "timestamp": "2026-02-03T10:58:44.713569"
+  },
+  "Blue Planet II_2017": {
+    "poster_path": null,
+    "timestamp": "2026-02-03T10:58:45.177716"
+  },
+  "The Empire Strikes Back_1980": {
+    "poster_path": "/nNAeTmF4CtdSgMDplXTDPOpYzsX.jpg",
+    "tmdb_id": 1891,
+    "title": "The Empire Strikes Back",
+    "timestamp": "2026-02-03T11:00:48.393195"
+  },
+  "Oldboy_2003": {
+    "poster_path": "/pWDtjs568ZfOTMbURQBYuT4Qxka.jpg",
+    "tmdb_id": 670,
+    "title": "Oldboy",
+    "timestamp": "2026-02-03T11:00:48.873611"
+  },
+  "The Matrix_1999": {
+    "poster_path": "/p96dm7sCMn4VYAStA6siNz30G1r.jpg",
+    "tmdb_id": 603,
+    "title": "The Matrix",
+    "timestamp": "2026-02-03T11:00:49.301834"
+  },
+  "Fight Club_1999": {
+    "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+    "tmdb_id": 550,
+    "title": "Fight Club",
+    "timestamp": "2026-02-03T11:04:49.924866"
+  },
+  "Saving Private Ryan_1998": {
+    "poster_path": "/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg",
+    "tmdb_id": 857,
+    "title": "Saving Private Ryan",
+    "timestamp": "2026-02-03T11:04:50.432756"
+  },
+  "Gabriel's Inferno_2020": {
+    "poster_path": "/oyG9TL7FcRP4EZ9Vid6uKzwdndz.jpg",
+    "tmdb_id": 696374,
+    "title": "Gabriel's Inferno",
+    "timestamp": "2026-02-03T11:04:50.908198"
+  },
+  "Grave of the Fireflies_1988": {
+    "poster_path": "/k9tv1rXZbOhH7eiCk378x61kNQ1.jpg",
+    "tmdb_id": 12477,
+    "title": "Grave of the Fireflies",
+    "timestamp": "2026-02-03T11:16:23.606592"
+  },
+  "Schindler's List_1993": {
+    "poster_path": "/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg",
+    "tmdb_id": 424,
+    "title": "Schindler's List",
+    "timestamp": "2026-02-03T11:22:41.465125"
+  },
+  "Planet Earth_2006": {
+    "poster_path": null,
+    "tmdb_id": 814987,
+    "title": "Can We Save Planet Earth?",
+    "timestamp": "2026-02-03T11:25:48.501714"
+  },
+  "The Pianist_2002": {
+    "poster_path": "/2hFvxCCWrTmCYwfy7yum0GKRi3Y.jpg",
+    "tmdb_id": 423,
+    "title": "The Pianist",
+    "timestamp": "2026-02-03T11:32:07.703308"
+  },
+  "Neon Genesis Evangelion: The End of Evangelion_1997": {
+    "poster_path": "/j6G24dqI4WgUtChhWjfnI4lnmiK.jpg",
+    "tmdb_id": 18491,
+    "title": "Neon Genesis Evangelion: The End of Evangelion",
+    "timestamp": "2026-02-03T11:34:45.073185"
   }
 }
