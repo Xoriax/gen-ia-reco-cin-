@@ -294,12 +294,12 @@ def process_similar_title(similar_title: str, df: pd.DataFrame, embeddings: np.n
     )
     
     if not similar_movies:
-        print(f"   ⚠️  No similar movies found in dataset")
+        print(f"   Warning: no similar movies found in dataset")
         return None
-    
+
     # Aggregate descriptions from found similar movies
     aggregated_context = aggregate_similar_movies_context(similar_movies, max_descriptions=3)
-    print(f"   ✓ Aggregated context from {len(similar_movies)} similar movies")
+    print(f"   OK: aggregated context from {len(similar_movies)} similar movies")
     
     return aggregated_context
 
@@ -373,16 +373,14 @@ def recommend_movies(
     # Calculate full similarities (Title + Description + Genre + Category)
     full_sims = cosine_similarity(q_emb, embeddings_filtered)[0]
     
-    # Calculate description-specific similarity
+    # Calculate description-specific similarity (batched: one encode call for
+    # all movie descriptions instead of one call per row, so this stays fast
+    # as the dataset grows to tens of thousands of rows)
     if description:
         desc_emb = embed_text([description])
-        desc_sims = []
-        for idx, row in df_filtered.iterrows():
-            movie_desc = str(row.get('Description narrative', ''))
-            movie_desc_emb = embed_text([movie_desc])
-            desc_sim = cosine_similarity(desc_emb, movie_desc_emb)[0][0]
-            desc_sims.append(desc_sim)
-        desc_sims = np.array(desc_sims)
+        movie_descs = df_filtered['Description narrative'].fillna('').astype(str).tolist()
+        movie_desc_embs = embed_text(movie_descs)
+        desc_sims = cosine_similarity(desc_emb, movie_desc_embs)[0]
     else:
         # If no description, use uniform similarity
         desc_sims = np.full(len(df_filtered), 0.5)
@@ -428,7 +426,7 @@ def recommend_movies(
                 if genre in weights:
                     max_weight = max(max_weight, weights[genre])
             
-            # Normalize to 0-1 range (1.0-1.5 → 0.67-1.0)
+            # Normalize to 0-1 range (1.0-1.5 -> 0.67-1.0)
             genre_normalized_weights[i] = (max_weight - 0.5) / 1.0
     
     # NEW WEIGHTED FORMULA (all Hugging Face embeddings):

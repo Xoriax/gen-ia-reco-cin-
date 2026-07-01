@@ -31,7 +31,7 @@ def test_is_query_too_short():
     for query in short_queries:
         result = is_query_too_short(query)
         word_count = len(query.split())
-        print(f"✓ '{query}' ({word_count} mots) → Courte : {result}")
+        print(f"OK: '{query}' ({word_count} mots) Courte : {result}")
         assert result == True, f"'{query}' devrait être détectée comme courte"
     
     # Cas 2: Requête longue (>= 5 mots)
@@ -44,17 +44,17 @@ def test_is_query_too_short():
     for query in long_queries:
         result = is_query_too_short(query)
         word_count = len(query.split())
-        print(f"✓ '{query[:50]}...' ({word_count} mots) → Courte : {result}")
+        print(f"OK: '{query[:50]}...' ({word_count} mots) Courte : {result}")
         assert result == False, f"'{query}' ne devrait PAS être détectée comme courte"
     
     # Cas 3: Cas limites
-    edge_cases = ["", "   "]
+    edge_cases = ["", " "]
     for query in edge_cases:
         result = is_query_too_short(query)
-        print(f"✓ Requête vide → Courte : {result}")
+        print(f"OK: Requête vide Courte : {result}")
         assert result == True
     
-    print(f"\n✅ Test 1 réussi : Détection correcte des requêtes courtes\n")
+    print(f"\nOK Test 1 réussi : Détection correcte des requêtes courtes\n")
 
 def test_augmentation_with_gemini():
     """Test de l'augmentation avec Gemini (nécessite clé API)."""
@@ -63,7 +63,7 @@ def test_augmentation_with_gemini():
     print("="*80)
     
     # CAS 1 : Requêtes COURTES (< 5 mots) - DOIVENT être enrichies
-    print("\n📝 CAS 1 : Requêtes COURTES (< 5 mots) - Enrichissement OBLIGATOIRE :")
+    print("\n CAS 1 : Requêtes COURTES (< 5 mots) - Enrichissement OBLIGATOIRE :")
     print("-" * 80)
     
     short_queries = [
@@ -75,28 +75,28 @@ def test_augmentation_with_gemini():
     
     for query in short_queries:
         word_count_original = len(query.split())
-        print(f"\n🔍 Test : '{query}' ({word_count_original} mots < 5)")
+        print(f"\n Test : '{query}' ({word_count_original} mots < 5)")
         
         enriched = augment_query_with_gemini(query)
         word_count_enriched = len(enriched.split())
         
-        print(f"   📥 Entrée  : {query}")
-        print(f"   📤 Sortie  : {enriched}")
-        print(f"   📊 Longueur : {word_count_original} mots → {word_count_enriched} mots")
+        print(f" Entrée : {query}")
+        print(f" Sortie : {enriched}")
+        print(f" Longueur : {word_count_original} mots {word_count_enriched} mots")
         
         # Vérifications de qualité
         if word_count_enriched <= word_count_original:
-            print(f"   ❌ ÉCHEC : Pas d'enrichissement (vérifiez GEMINI_API_KEY)")
+            print(f" FAIL ÉCHEC : Pas d'enrichissement (vérifiez GEMINI_API_KEY)")
         elif enriched.strip().startswith(query + " :") or enriched.strip() == query + " :":
-            print(f"   ❌ ÉCHEC : Enrichissement de mauvaise qualité (juste '{query} :')")
+            print(f" FAIL ÉCHEC : Enrichissement de mauvaise qualité (juste '{query} :')")
         elif word_count_enriched >= word_count_original + 5:
-            print(f"   ✅ SUCCÈS : Enrichissement de qualité (+{word_count_enriched - word_count_original} mots)")
+            print(f" OK SUCCÈS : Enrichissement de qualité (+{word_count_enriched - word_count_original} mots)")
         else:
-            print(f"   ⚠️  PARTIEL : Enrichissement minimal")
+            print(f" WARNING PARTIEL : Enrichissement minimal")
     
     # CAS 2 : Requêtes LONGUES (>= 5 mots) - NE DOIVENT PAS être enrichies
     print("\n" + "="*80)
-    print("📝 CAS 2 : Requêtes LONGUES (>= 5 mots) - PAS d'enrichissement :")
+    print(" CAS 2 : Requêtes LONGUES (>= 5 mots) - PAS d'enrichissement :")
     print("-" * 80)
     
     long_queries = [
@@ -107,20 +107,20 @@ def test_augmentation_with_gemini():
     
     for query in long_queries:
         word_count = len(query.split())
-        print(f"\n🔍 Test : '{query[:50]}...' ({word_count} mots >= 5)")
+        print(f"\n Test : '{query[:50]}...' ({word_count} mots >= 5)")
         
         enriched = augment_query_with_gemini(query)
         
-        print(f"   📥 Entrée  : {query}")
-        print(f"   📤 Sortie  : {enriched}")
+        print(f" Entrée : {query}")
+        print(f" Sortie : {enriched}")
         
         if enriched == query:
-            print(f"   ✅ SUCCÈS : Requête non modifiée (comme attendu)")
+            print(f" OK SUCCÈS : Requête non modifiée (comme attendu)")
         else:
-            print(f"   ❌ ÉCHEC : Requête modifiée alors qu'elle était déjà longue")
+            print(f" FAIL ÉCHEC : Requête modifiée alors qu'elle était déjà longue")
             assert False, "Une requête longue ne devrait pas être modifiée"
     
-    print(f"\n✅ Test 2 réussi : Augmentation Gemini fonctionnelle\n")
+    print(f"\nOK Test 2 réussi : Augmentation Gemini fonctionnelle\n")
 
 def test_integration():
     """Test de l'intégration avec movie_recommender."""
@@ -133,7 +133,7 @@ def test_integration():
     
     try:
         from movie_recommender import recommend_movies
-        print("✓ Module movie_recommender importé avec succès")
+        print("OK: Module movie_recommender importé avec succès")
         
         # Vérifier que le paramètre enable_augmentation existe
         import inspect
@@ -141,18 +141,18 @@ def test_integration():
         params = sig.parameters
         
         if 'enable_augmentation' in params:
-            print("✓ Paramètre enable_augmentation présent")
+            print("OK: Paramètre enable_augmentation présent")
         else:
-            print("✗ Paramètre enable_augmentation manquant")
+            print("FAIL: Paramètre enable_augmentation manquant")
         
-        print(f"\n✅ Test 3 réussi : Intégration correcte\n")
+        print(f"\nOK Test 3 réussi : Intégration correcte\n")
         
     except Exception as e:
-        print(f"✗ Erreur lors de l'import : {e}")
+        print(f"FAIL: Erreur lors de l'import : {e}")
         raise
 
 if __name__ == "__main__":
-    print("\n" + "🎬" + " "*28 + "TESTS EF4.1" + " "*28 + "🎬")
+    print("\n" + "" + " "*28 + "TESTS EF4.1" + " "*28 + "")
     print("Tests unitaires : Augmentation de l'Entrée (Pre-Processing)")
     print("="*80 + "\n")
     
@@ -161,10 +161,10 @@ if __name__ == "__main__":
     test_integration()
     
     print("="*80)
-    print("🎉 TOUS LES TESTS RÉUSSIS !")
+    print(" TOUS LES TESTS RÉUSSIS !")
     print("="*80)
     print("\nRésumé:")
-    print("  ✓ Détection des requêtes courtes")
-    print("  ✓ Logique conditionnelle (< 5 mots)")
-    print("  ✓ Enrichissement Gemini (si clé API)")
-    print("  ✓ Intégration avec movie_recommender")
+    print(" OK Détection des requêtes courtes")
+    print(" OK Logique conditionnelle (< 5 mots)")
+    print(" OK Enrichissement Gemini (si clé API)")
+    print(" OK Intégration avec movie_recommender")

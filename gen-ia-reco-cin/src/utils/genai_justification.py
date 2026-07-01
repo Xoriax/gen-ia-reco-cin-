@@ -1,142 +1,95 @@
 """
 GenAI module for generating personalized recommendation justification text (EF4.3).
-Produces sophisticated, contextual synthesis using semantic analysis.
-Creates compelling narrative explanations adapted to user's cinematic profile.
+Calls Gemini once per recommendation set to produce a narrative synthesis
+explaining why the top films match the user's cinematic profile. The prompt is
+grounded in the already-selected top-3 titles (from SBERT scoring) so Gemini
+only comments on them instead of inventing new recommendations (mitigates
+hallucination risk).
 """
+import hashlib
+import json
+import sys
+from pathlib import Path
 from typing import Optional, Dict, List
 
-def _get_intensity_descriptor(intensity: int, preference_type: str) -> tuple:
-    """
-    Get detailed descriptors for Likert scale values.
-    Returns tuple of (adjective, narrative_phrase)
-    """
-    descriptors = {
-        'action_intensity': {
-            1: ('serene', 'require intellectual engagement over physical drama'),
-            2: ('measured', 'appreciate subtle tension and character-driven moments'),
-            3: ('balanced', 'enjoy a mix of character development and dynamic sequences'),
-            4: ('adrenaline-fueled', 'thrive on kinetic energy and explosive sequences'),
-            5: ('explosive', 'demand non-stop intensity and visceral action')
-        },
-        'narrative_complexity': {
-            1: ('linear', 'prefer stories that unfold naturally without mind-bending twists'),
-            2: ('straightforward', 'like plots that are accessible yet engaging'),
-            3: ('layered', 'appreciate narratives with subtle depth and multiple threads'),
-            4: ('intricate', 'enjoy puzzles that demand active mental engagement'),
-            5: ('labyrinthine', 'relish complex, interconnected storylines that reward attention')
-        },
-        'darkness': {
-            1: ('uplifting', 'seek heartwarming, optimistic narratives'),
-            2: ('light-hearted', 'prefer stories with genuine warmth and humor'),
-            3: ('balanced', 'appreciate both light and shadow in storytelling'),
-            4: ('noir', 'are drawn to morally ambiguous characters and gritty realism'),
-            5: ('harrowing', 'embrace deeply psychological and potentially disturbing content')
-        },
-        'realism': {
-            1: ('grounded', 'favor authentic, documentary-like storytelling'),
-            2: ('realistic', 'appreciate stories anchored in plausible human experience'),
-            3: ('balanced', 'enjoy blending reality with imaginative elements'),
-            4: ('fantastical', 'embrace elaborate world-building and speculative concepts'),
-            5: ('surreal', 'explore boundary-pushing, dreamlike narratives')
-        }
-    }
-    
-    mapping = {
-        'action_intensity': 'action_intensity',
-        'narrative_complexity': 'narrative_complexity',
-        'darkness': 'darkness',
-        'realism': 'realism'
-    }
-    
-    pref_key = mapping.get(preference_type)
-    if pref_key and pref_key in descriptors:
-        return descriptors[pref_key].get(intensity, ('balanced', 'have diverse cinematic preferences'))
-    return ('balanced', 'have diverse preferences')
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.services.gemini_service import call_gemini
 
-def _build_cinematic_profile(user_preferences: Dict) -> str:
-    """
-    Build a sophisticated cinematic profile narrative.
-    """
-    action = user_preferences.get('action_intensity', 3)
-    complexity = user_preferences.get('narrative_complexity', 3)
-    darkness = user_preferences.get('darkness', 3)
-    realism = user_preferences.get('realism', 3)
-    description = user_preferences.get('description', '')
-    period = user_preferences.get('period', '')
-    
-    # Get descriptors
-    action_adj, action_phrase = _get_intensity_descriptor(action, 'action_intensity')
-    complexity_adj, complexity_phrase = _get_intensity_descriptor(complexity, 'narrative_complexity')
-    darkness_adj, darkness_phrase = _get_intensity_descriptor(darkness, 'darkness')
-    realism_adj, realism_phrase = _get_intensity_descriptor(realism, 'realism')
-    
-    # Build semantic profile
-    profile_parts = [
-        f"You {action_phrase}",
-        f"you {complexity_phrase}",
-        f"you {darkness_phrase}",
-        f"and you {realism_phrase}"
-    ]
-    
-    profile = ", ".join(profile_parts) + "."
-    
-    # Add period context if provided
-    if period:
-        period_mapping = {
-            'present-2020': 'contemporary cinema',
-            '2020-2015': 'recent releases',
-            '2015-2010': 'modern classics',
-            '2010-2000': '2000s-2010s cinema',
-            '2000-1980': 'classics from 1980-2000',
-            '<1980': 'timeless films from before 1980'
-        }
-        period_phrase = period_mapping.get(period, 'films across periods')
-        profile += f" With an interest in {period_phrase},"
-    
-    return profile
+CACHE_FILE = Path(__file__).parent / ".justification_cache.json"
+_CACHE = None
 
-def _extract_key_themes(description: str) -> List[str]:
-    """
-    Extract key thematic elements from user's free-form description.
-    """
-    keywords = []
-    
-    description_lower = description.lower()
-    
-    # Map common terms to themes
-    theme_map = {
-        'drama': ['emotional depth', 'character exploration'],
-        'action': ['thrilling sequences', 'dynamic cinematography'],
-        'mystery': ['puzzle elements', 'narrative intrigue'],
-        'romance': ['emotional connection', 'relational dynamics'],
-        'thriller': ['suspense', 'tension'],
-        'horror': ['psychological intensity', 'atmospheric dread'],
-        'comedy': ['humor', 'lightness'],
-        'crime': ['moral complexity', 'investigative narrative'],
-        'sci-fi': ['imaginative world-building', 'speculative concepts'],
-        'fantasy': ['immersive worlds', 'mythic elements'],
-        'war': ['historical gravity', 'epic scale'],
-        'adventure': ['exploration', 'discovery'],
-    }
-    
-    for theme, descriptors in theme_map.items():
-        if theme in description_lower:
-            keywords.extend(descriptors)
-    
-    return list(set(keywords))[:3]  # Return up to 3 unique themes
 
-def _score_to_confidence(score: float) -> str:
-    """Convert score to confidence language."""
-    if score >= 0.85:
-        return "exceptionally well"
-    elif score >= 0.75:
-        return "very closely"
-    elif score >= 0.65:
-        return "strongly"
-    elif score >= 0.50:
-        return "meaningfully"
-    else:
-        return "reasonably"
+def load_cache():
+    global _CACHE
+    if _CACHE is None:
+        if CACHE_FILE.exists():
+            try:
+                with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+                    _CACHE = json.load(f)
+            except Exception:
+                _CACHE = {}
+        else:
+            _CACHE = {}
+    return _CACHE
+
+
+def save_cache():
+    global _CACHE
+    if _CACHE is not None:
+        try:
+            with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(_CACHE, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Warning: could not save justification cache: {e}")
+
+
+def _build_prompt(user_preferences: Dict, recommendations: List[Dict],
+                   priority_elements: Optional[List[str]]) -> str:
+    top = recommendations[:3]
+    titles_block = "\n".join(
+        f"- \"{r.get('title', 'Unknown')}\" ({r.get('year', '?')}, {r.get('genre', 'N/A')}) "
+        f"- match score: {r.get('score', 0):.1%}"
+        for r in top
+    )
+    refinement = ""
+    if priority_elements:
+        refinement = f"\nLeast-weighted scoring factors (could be refined further): {', '.join(priority_elements)}."
+
+    return (
+        "You are a film recommendation assistant. A semantic search engine (SBERT) already "
+        "selected the movies below for this user - do NOT suggest any other film, only "
+        "explain and contextualize these exact results.\n\n"
+        "User profile:\n"
+        f"- Free-form request: \"{user_preferences.get('description', '')}\"\n"
+        f"- Similar title mentioned: \"{user_preferences.get('similar_title', '')}\"\n"
+        f"- Action intensity (1-5): {user_preferences.get('action_intensity', 3)}\n"
+        f"- Narrative complexity (1-5): {user_preferences.get('narrative_complexity', 3)}\n"
+        f"- Darkness/tone (1-5): {user_preferences.get('darkness', 3)}\n"
+        f"- Realism vs fantasy (1-5): {user_preferences.get('realism', 3)}\n"
+        f"- Preferred period: \"{user_preferences.get('period', 'any')}\"\n\n"
+        f"Top recommended films:\n{titles_block}\n"
+        f"{refinement}\n\n"
+        "Write a short, engaging justification (3-5 sentences) explaining why the top film "
+        "fits this profile, briefly mentioning the second choice as an alternative, in English."
+    )
+
+
+def _cache_key(user_preferences: Dict, recommendations: List[Dict]) -> str:
+    top_titles = [r.get("title", "") for r in recommendations[:3]]
+    raw = json.dumps({"prefs": user_preferences, "titles": top_titles}, sort_keys=True)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _local_fallback(recommendations: List[Dict]) -> str:
+    """Minimal local fallback used only if Gemini is unavailable."""
+    if not recommendations:
+        return ""
+    top = recommendations[0]
+    return (
+        f"Based on your preferences, \"{top.get('title', 'this film')}\" is our top match "
+        f"with a {top.get('score', 0):.1%} affinity score."
+    )
+
 
 def generate_recommendation_justification(
     user_preferences: Dict,
@@ -144,63 +97,35 @@ def generate_recommendation_justification(
     priority_elements: List[str] = None
 ) -> Optional[str]:
     """
-    Generate sophisticated, personalized recommendation justification (EF4.3).
-    Creates narrative synthesis that explains why films match the user's profile.
-    
+    Generate a personalized recommendation justification via Gemini (EF4.3).
+    One API call per recommendation set (cached on preferences + top titles).
+
     Args:
         user_preferences: User's complete search criteria
         recommendations: Top movie recommendations with scores
         priority_elements: Low-scoring elements for future refinement
-        
+
     Returns:
-        Compelling narrative justification or None
+        Generated narrative justification, or None if there is nothing to justify.
     """
-    
-    try:
-        if not recommendations or len(recommendations) < 1:
-            return None
-        
-        # Build cinematic profile narrative
-        profile_narrative = _build_cinematic_profile(user_preferences)
-        
-        # Get top recommendations
-        top_rec = recommendations[0]
-        top_title = top_rec.get('title', 'Unknown')
-        top_score = top_rec.get('score', 0)
-        top_genres = top_rec.get('genre', 'Drama').split(',')[0].strip()
-        
-        # Get confidence language
-        confidence = _score_to_confidence(top_score)
-        
-        # Extract themes from description
-        themes = _extract_key_themes(user_preferences.get('description', ''))
-        theme_text = ""
-        if themes:
-            theme_text = f" Its thematic alignment with {' and '.join(themes)} makes it particularly resonant."
-        
-        # Build main justification
-        main_justification = f"{profile_narrative} Our semantic analysis identified '{top_title}' "
-        main_justification += f"as your ideal match, as it aligns {confidence} with your cinematic preferences. "
-        main_justification += f"This {top_genres} film scores {top_score:.1%} across our recommendation metrics.{theme_text}"
-        
-        # Add deeper insight if we have multiple recommendations
-        if len(recommendations) >= 2:
-            second_rec = recommendations[1]
-            second_title = second_rec.get('title', 'Unknown')
-            second_score = second_rec.get('score', 0)
-            second_confidence = _score_to_confidence(second_score)
-            
-            main_justification += f"\n\n'{second_title}' emerges as a complementary choice, matching {second_confidence} "
-            main_justification += f"with your profile ({second_score:.1%}), offering a different perspective within your preferences."
-        
-        # Add personalized refinement suggestion
-        if priority_elements and len(priority_elements) > 0:
-            refinement = priority_elements[0].replace('_', ' ')
-            main_justification += f"\n\nTo further refine future recommendations, exploring your preferences around "
-            main_justification += f"'{refinement}' could unlock even more tailored suggestions."
-        
-        return main_justification
-        
-    except Exception as e:
-        print(f"⚠️ Error in EF4.3 justification generation: {e}")
+    if not recommendations or len(recommendations) < 1:
         return None
+
+    try:
+        cache = load_cache()
+        key = _cache_key(user_preferences, recommendations)
+        prompt = _build_prompt(user_preferences, recommendations, priority_elements)
+
+        justification = call_gemini(
+            prompt=prompt,
+            namespace="justification",
+            cache=cache,
+            cache_key=key,
+            temperature=0.7,
+            fallback_fn=lambda: _local_fallback(recommendations),
+        )
+        save_cache()
+        return justification or _local_fallback(recommendations)
+    except Exception as e:
+        print(f"Error in EF4.3 justification generation: {e}")
+        return _local_fallback(recommendations)

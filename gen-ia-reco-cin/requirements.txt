@@ -1,5 +1,4 @@
-npm # Core dependencies
-flask==3.0.0
+# Core dependencies
 pandas==2.1.3
 numpy==1.24.3
 scikit-learn==1.3.2
@@ -8,6 +7,14 @@ torch==2.1.1
 torchvision==0.16.1
 transformers==4.36.0
 
+# Frontend / dashboard
+streamlit==1.38.0
+plotly==5.24.1
+pyarrow==24.0.0
+
+# GenAI (EF4.1, EF4.3)
+google-genai==0.7.0
+
 # Testing
 pytest==7.4.3
 pytest-cov==4.1.0
@@ -15,6 +22,3 @@ pytest-cov==4.1.0
 # Development
 python-dotenv==1.0.0
 requests==2.31.0
-
-# EF4.1: Query augmentation with Gemini AI
-# Note: Uses Gemini REST API (no SDK needed)

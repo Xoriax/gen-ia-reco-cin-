@@ -86,7 +86,7 @@ def find_similar_movies_in_dataset(
         })
         count += 1
     
-    print(f"   ✓ Found {len(similar_movies)} similar movies")
+    print(f"   OK: found {len(similar_movies)} similar movies")
     for i, movie in enumerate(similar_movies[:3], 1):
         print(f"     {i}. {movie['title']} ({movie['year']}) - Similarity: {movie['similarity']:.1%}")
     

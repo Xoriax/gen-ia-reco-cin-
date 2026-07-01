@@ -21,7 +21,7 @@ CACHE_EXPIRY_DAYS = 30
 def _get_api_key() -> str:
     """
     Get TMDB API key from environment.
-    Deferred loading to ensure .env is loaded by app.py first.
+    Deferred loading to ensure .env is loaded by the app entrypoint first.
     """
     api_key = os.getenv('TMDB_API_KEY', '').strip()
     return api_key

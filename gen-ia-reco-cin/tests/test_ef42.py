@@ -122,7 +122,7 @@ def _generate_progression_plan(recommendations, description, action_intensity, n
         plan_parts.append("STRONG MATCHES (High Similarity):")
         for rec in high_score_recs[:3]:
             plan_parts.append(f"- {rec['titre']} ({rec['année']}) - Score: {rec['score']:.3f}")
-            plan_parts.append(f"  Genre: {rec['genre']}")
+            plan_parts.append(f" Genre: {rec['genre']}")
         plan_parts.append("")
         plan_parts.append("These recommendations closely match your preferences. They represent your current comfort zone.")
         plan_parts.append("")
@@ -132,7 +132,7 @@ def _generate_progression_plan(recommendations, description, action_intensity, n
         plan_parts.append("PRIORITY AREAS TO EXPLORE (Lower Similarity - Growth Opportunities):")
         for rec in low_score_recs[:3]:
             plan_parts.append(f"- {rec['titre']} ({rec['année']}) - Score: {rec['score']:.3f}")
-            plan_parts.append(f"  Genre: {rec['genre']}")
+            plan_parts.append(f" Genre: {rec['genre']}")
         plan_parts.append("")
         plan_parts.append("These recommendations offer opportunities to explore new themes and expand your preferences.")
         plan_parts.append("They might introduce you to unexpected gems that broaden your cinematic horizons.")
@@ -189,7 +189,7 @@ def test_ef42_basic_progression_plan():
         darkness=3,
         realism=3,
         top_k=5,
-        enable_progression_plan=True  # Enable EF4.2
+        enable_progression_plan=True # Enable EF4.2
     )
     
     # Verify structure
@@ -207,11 +207,11 @@ def test_ef42_basic_progression_plan():
     assert isinstance(plan, str), "Progression plan should be a string"
     assert len(plan) > 100, "Progression plan should be detailed (>100 chars)"
     
-    print(f"✓ Number of recommendations: {len(recommendations)}")
-    print(f"✓ Plan generated: YES")
-    print(f"✓ Plan length: {len(plan)} characters")
+    print(f"OK: Number of recommendations: {len(recommendations)}")
+    print(f"OK: Plan generated: YES")
+    print(f"OK: Plan length: {len(plan)} characters")
     
-    print("\n📊 PROGRESSION PLAN:")
+    print("\n PROGRESSION PLAN:")
     print(plan)
     
     # Verify recommendations have scores
@@ -219,7 +219,7 @@ def test_ef42_basic_progression_plan():
         assert 'score' in rec, "Each recommendation should have a similarity score"
         assert 0 <= rec['score'] <= 1, "Score should be normalized between 0 and 1"
     
-    print("\n✅ TEST 1 PASSED: Basic progression plan generation works")
+    print("\nOK TEST 1 PASSED: Basic progression plan generation works")
 
 def test_ef42_priority_identification():
     """
@@ -253,15 +253,15 @@ def test_ef42_priority_identification():
     max_score = max(scores)
     avg_score = np.mean(scores)
     
-    print(f"✓ Score range: {min_score:.4f} - {max_score:.4f}")
-    print(f"✓ Average score: {avg_score:.4f}")
+    print(f"OK: Score range: {min_score:.4f} - {max_score:.4f}")
+    print(f"OK: Average score: {avg_score:.4f}")
     
-    print("\n📋 RECOMMENDATIONS WITH SCORES:")
+    print("\n RECOMMENDATIONS WITH SCORES:")
     for i, rec in enumerate(recommendations, 1):
-        marker = "⚠️ LOW" if rec['score'] < avg_score else "✓ STRONG"
-        print(f"  {i}. {rec['titre']} ({rec['année']}) - Score: {rec['score']:.4f} {marker}")
+        marker = "WARNING: LOW" if rec['score'] < avg_score else "OK: STRONG"
+        print(f" {i}. {rec['titre']} ({rec['année']}) - Score: {rec['score']:.4f} {marker}")
     
-    print("\n📊 PROGRESSION PLAN:")
+    print("\n PROGRESSION PLAN:")
     print(plan)
     
     # The plan should contain English keywords related to priorities/evolution
@@ -270,9 +270,9 @@ def test_ef42_priority_identification():
     found_keywords = [kw for kw in priority_keywords if kw in plan_lower]
     
     assert len(found_keywords) > 0, f"Plan should contain at least one priority-related keyword: {priority_keywords}"
-    print(f"\n✓ Priority keywords found: {', '.join(found_keywords)}")
+    print(f"\nOK Priority keywords found: {', '.join(found_keywords)}")
     
-    print("\n✅ TEST 2 PASSED: Priority identification works correctly")
+    print("\nOK TEST 2 PASSED: Priority identification works correctly")
 
 def test_ef42_extreme_preferences():
     """
@@ -300,16 +300,16 @@ def test_ef42_extreme_preferences():
     recommendations = result['recommendations']
     plan = result['progression_plan']
     
-    print(f"✓ Number of recommendations: {len(recommendations)}")
+    print(f"OK: Number of recommendations: {len(recommendations)}")
     
     # Verify recommendations match the extreme action preference
     genres_found = []
     for rec in recommendations:
         genre = rec.get('genre', '').lower()
         genres_found.append(genre)
-        print(f"  - {rec['titre']}: {rec['genre']} (Score: {rec['score']:.4f})")
+        print(f" - {rec['titre']}: {rec['genre']} (Score: {rec['score']:.4f})")
     
-    print("\n📊 PROGRESSION PLAN:")
+    print("\n PROGRESSION PLAN:")
     print(plan)
     
     # Plan should reference action-related content
@@ -319,8 +319,8 @@ def test_ef42_extreme_preferences():
     
     assert len(found_action) > 0, "Plan should reference action-related themes"
     
-    print(f"\n✓ Action keywords in plan: {', '.join(found_action)}")
-    print("\n✅ TEST 3 PASSED: Extreme preferences handled correctly")
+    print(f"\nOK Action keywords in plan: {', '.join(found_action)}")
+    print("\nOK TEST 3 PASSED: Extreme preferences handled correctly")
 
 def test_ef42_contemplative_preferences():
     """
@@ -347,20 +347,20 @@ def test_ef42_contemplative_preferences():
     recommendations = result['recommendations']
     plan = result['progression_plan']
     
-    print(f"✓ Number of recommendations: {len(recommendations)}")
+    print(f"OK: Number of recommendations: {len(recommendations)}")
     
-    print("\n📋 RECOMMENDATIONS:")
+    print("\n RECOMMENDATIONS:")
     for i, rec in enumerate(recommendations, 1):
-        print(f"  {i}. {rec['titre']} ({rec['année']})")
-        print(f"     Genre: {rec['genre']} | Score: {rec['score']:.4f}")
+        print(f" {i}. {rec['titre']} ({rec['année']})")
+        print(f" Genre: {rec['genre']} | Score: {rec['score']:.4f}")
     
-    print("\n📊 PROGRESSION PLAN:")
+    print("\n PROGRESSION PLAN:")
     print(plan)
     
     # Verify plan structure contains key sections
     assert len(plan) > 200, "Plan for complex preferences should be detailed"
     
-    print("\n✅ TEST 4 PASSED: Contemplative preferences handled correctly")
+    print("\nOK TEST 4 PASSED: Contemplative preferences handled correctly")
 
 def test_ef42_with_period_filter():
     """
@@ -389,21 +389,21 @@ def test_ef42_with_period_filter():
     recommendations = result['recommendations']
     plan = result['progression_plan']
     
-    print(f"✓ Number of recommendations: {len(recommendations)}")
+    print(f"OK: Number of recommendations: {len(recommendations)}")
     
     # Verify all movies are within the specified period
-    print("\n📋 RECOMMENDATIONS (with year verification):")
+    print("\n RECOMMENDATIONS (with year verification):")
     for i, rec in enumerate(recommendations, 1):
         year = rec['année']
         in_period = 2000 <= year < 2010
-        status = "✓" if in_period else "✗"
-        print(f"  {status} {i}. {rec['titre']} ({year}) - Score: {rec['score']:.4f}")
+        status = "OK" if in_period else "FAIL"
+        print(f" {status} {i}. {rec['titre']} ({year}) - Score: {rec['score']:.4f}")
         assert in_period, f"Movie {rec['titre']} ({year}) is outside the 2010-2000 period"
     
-    print("\n📊 PROGRESSION PLAN:")
+    print("\n PROGRESSION PLAN:")
     print(plan)
     
-    print("\n✅ TEST 5 PASSED: Period filtering with progression plan works")
+    print("\nOK TEST 5 PASSED: Period filtering with progression plan works")
 
 def test_ef42_backward_compatibility():
     """
@@ -424,21 +424,21 @@ def test_ef42_backward_compatibility():
         darkness=1,
         realism=3,
         top_k=5,
-        enable_progression_plan=False  # Disabled
+        enable_progression_plan=False # Disabled
     )
     
     # Should return a list, not a dict
     assert isinstance(result, list), "Without EF4.2, should return a list"
     assert len(result) > 0, "Should return recommendations"
     
-    print(f"✓ Return type: {type(result).__name__}")
-    print(f"✓ Number of recommendations: {len(result)}")
+    print(f"OK: Return type: {type(result).__name__}")
+    print(f"OK: Number of recommendations: {len(result)}")
     
-    print("\n📋 RECOMMENDATIONS:")
+    print("\n RECOMMENDATIONS:")
     for i, rec in enumerate(result, 1):
-        print(f"  {i}. {rec['titre']} ({rec['année']}) - Score: {rec['score']:.4f}")
+        print(f" {i}. {rec['titre']} ({rec['année']}) - Score: {rec['score']:.4f}")
     
-    print("\n✅ TEST 6 PASSED: Backward compatibility maintained")
+    print("\nOK TEST 6 PASSED: Backward compatibility maintained")
 
 def test_ef42_single_api_call():
     """
@@ -475,14 +475,14 @@ def test_ef42_single_api_call():
     # A well-generated plan should have proper structure
     assert '\n' in plan or '. ' in plan, "Plan should have structured content"
     
-    print(f"✓ Plan generated: YES")
-    print(f"✓ Plan length: {len(plan)} characters")
-    print(f"✓ Plan appears cohesive and complete")
+    print(f"OK: Plan generated: YES")
+    print(f"OK: Plan length: {len(plan)} characters")
+    print(f"OK: Plan appears cohesive and complete")
     
-    print("\n📊 GENERATED PLAN:")
+    print("\n GENERATED PLAN:")
     print(plan)
     
-    print("\n✅ TEST 7 PASSED: Single API call requirement verified")
+    print("\nOK TEST 7 PASSED: Single API call requirement verified")
 
 def test_ef42_model_verification():
     """
@@ -507,9 +507,9 @@ def test_ef42_model_verification():
     assert isinstance(model, SentenceTransformer), "Should use SentenceTransformer"
     assert 'all-MiniLM-L12-v2' in MODEL_NAME, "Should use all-MiniLM-L12-v2 model"
     
-    print(f"✓ Model type: {type(model).__name__}")
-    print(f"✓ Model name: {MODEL_NAME}")
-    print(f"✓ Model loaded successfully")
+    print(f"OK: Model type: {type(model).__name__}")
+    print(f"OK: Model name: {MODEL_NAME}")
+    print(f"OK: Model loaded successfully")
     
     # Test a simple encoding to verify functionality
     test_text = ["action movie", "drama film"]
@@ -518,9 +518,9 @@ def test_ef42_model_verification():
     assert embeddings.shape[0] == 2, "Should encode 2 texts"
     assert embeddings.shape[1] > 0, "Embeddings should have dimensions"
     
-    print(f"✓ Embedding dimension: {embeddings.shape[1]}")
+    print(f"OK: Embedding dimension: {embeddings.shape[1]}")
     
-    print("\n✅ TEST 8 PASSED: Model verification successful")
+    print("\nOK TEST 8 PASSED: Model verification successful")
 
 def run_all_tests():
     """Execute all EF4.2 tests"""
@@ -548,29 +548,29 @@ def run_all_tests():
             test_func()
             passed += 1
         except Exception as e:
-            print(f"\n❌ FAILED: {test_name}")
-            print(f"   Error: {str(e)}")
+            print(f"\nFAIL FAILED: {test_name}")
+            print(f" Error: {str(e)}")
             failed += 1
             failed_tests.append(test_name)
     
     print_separator()
     print("╔" + "="*78 + "╗")
-    print(f"║  TEST SUMMARY: {passed} passed, {failed} failed" + " "*(78-30-len(str(passed))-len(str(failed))) + "║")
+    print(f"║ TEST SUMMARY: {passed} passed, {failed} failed" + " "*(78-30-len(str(passed))-len(str(failed))) + "║")
     print("╚" + "="*78 + "╝")
     
     if failed == 0:
-        print("\n🎉 ALL TESTS PASSED!")
-        print("\n✓ EF4.2 Requirements Validated:")
-        print("  • Personalized text generation via GenAI")
-        print("  • Priority identification (lowest similarity scores)")
-        print("  • Evolution path recommendations by theme")
-        print("  • Single API call for final output")
-        print("  • SentenceTransformer (all-MiniLM-L12-v2) usage")
+        print("\n ALL TESTS PASSED!")
+        print("\nOK EF4.2 Requirements Validated:")
+        print(" • Personalized text generation via GenAI")
+        print(" • Priority identification (lowest similarity scores)")
+        print(" • Evolution path recommendations by theme")
+        print(" • Single API call for final output")
+        print(" • SentenceTransformer (all-MiniLM-L12-v2) usage")
         return 0
     else:
-        print(f"\n⚠️  {failed} test(s) failed:")
+        print(f"\nWARNING {failed} test(s) failed:")
         for test_name in failed_tests:
-            print(f"   - {test_name}")
+            print(f" - {test_name}")
         return 1
 
 if __name__ == "__main__":

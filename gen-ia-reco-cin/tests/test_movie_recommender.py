@@ -24,18 +24,18 @@ def print_separator(char="=", length=80):
 
 def print_header(text):
     print_separator()
-    print(f"  {text}")
+    print(f" {text}")
     print_separator()
 
 def display_recommendations(recommendations, title="Recommandations"):
     """Affiche les recommandations de manière formatée."""
     print(f"\n{title} :\n")
     for i, rec in enumerate(recommendations, 1):
-        print(f"  {i}. {rec['titre']} ({rec['année']})")
-        print(f"     📁 Catégorie: {rec['catégorie']}")
-        print(f"     🎭 Genre: {rec['genre']}")
-        print(f"     ⭐ Score: {rec['score']:.4f}")
-        print(f"     📝 {rec['description'][:120]}...")
+        print(f" {i}. {rec['titre']} ({rec['année']})")
+        print(f" Catégorie: {rec['catégorie']}")
+        print(f" Genre: {rec['genre']}")
+        print(f" Score: {rec['score']:.4f}")
+        print(f" {rec['description'][:120]}...")
         print()
 
 def test_scenario_1():
@@ -44,7 +44,7 @@ def test_scenario_1():
     
     description = "Je veux un film dramatique intense avec du crime et du suspense"
     
-    print(f"\n📝 Description : \"{description}\"\n")
+    print(f"\n Description : \"{description}\"\n")
     
     recs = recommend_movies(
         description=description,
@@ -60,7 +60,7 @@ def test_scenario_2():
     
     similar_title = "The Shawshank Redemption"
     
-    print(f"\n🎬 Titre similaire : \"{similar_title}\"\n")
+    print(f"\n Titre similaire : \"{similar_title}\"\n")
     
     recs = recommend_movies(
         similar_title=similar_title,
@@ -74,11 +74,11 @@ def test_scenario_3():
     """Test avec échelle de Likert."""
     print_header("TEST 3 : Échelle de Likert")
     
-    print("\n📊 Critères Likert (1-5) :")
-    print("  • Intensité de l'Action    : 5 (Action pure/Explosif)")
-    print("  • Complexité Narrative     : 4 (Complexe)")
-    print("  • Noirceur/Violence        : 4 (Sombre/Violent)")
-    print("  • Réalisme                 : 2 (Ancré dans le réel)")
+    print("\n Critères Likert (1-5) :")
+    print(" • Intensité de l'Action : 5 (Action pure/Explosif)")
+    print(" • Complexité Narrative : 4 (Complexe)")
+    print(" • Noirceur/Violence : 4 (Sombre/Violent)")
+    print(" • Réalisme : 2 (Ancré dans le réel)")
     
     # Calculer les poids appliqués
     weights = calculate_likert_weights(
@@ -88,9 +88,9 @@ def test_scenario_3():
         realism=2
     )
     
-    print("\n⚖️  Pondérations thématiques calculées :")
+    print("\n Pondérations thématiques calculées :")
     for category, weight in sorted(weights.items(), key=lambda x: x[1], reverse=True)[:5]:
-        print(f"     - {category:20s} : {weight:.1f}x")
+        print(f" - {category:20s} : {weight:.1f}x")
     
     recs = recommend_movies(
         description="film intense avec beaucoup d'action",
@@ -117,7 +117,7 @@ def test_scenario_4():
     description = "comédie romantique légère"
     
     for period, period_label in periods:
-        print(f"\n📅 Période : {period_label}")
+        print(f"\n Période : {period_label}")
         
         recs = recommend_movies(
             description=description,
@@ -129,20 +129,20 @@ def test_scenario_4():
         if recs:
             print(f"\nTop 3 :")
             for i, rec in enumerate(recs, 1):
-                print(f"  {i}. {rec['titre']} ({rec['année']}) - {rec['catégorie']}")
+                print(f" {i}. {rec['titre']} ({rec['année']}) - {rec['catégorie']}")
 
 def test_scenario_5():
     """Test combiné : tous les critères ensemble."""
     print_header("TEST 5 : Scénario Complet (Tous les Critères)")
     
-    print("\n📋 Critères de recherche :")
-    print("  • Description      : \"film de science-fiction épique avec des voyages dans l'espace\"")
-    print("  • Titre similaire  : \"Interstellar\"")
-    print("  • Action           : 4 (Intense)")
-    print("  • Complexité       : 5 (Très complexe)")
-    print("  • Noirceur         : 3 (Modéré)")
-    print("  • Réalisme         : 5 (Fantastique/Surréaliste)")
-    print("  • Période          : 2015-2010")
+    print("\n Critères de recherche :")
+    print(" • Description : \"film de science-fiction épique avec des voyages dans l'espace\"")
+    print(" • Titre similaire : \"Interstellar\"")
+    print(" • Action : 4 (Intense)")
+    print(" • Complexité : 5 (Très complexe)")
+    print(" • Noirceur : 3 (Modéré)")
+    print(" • Réalisme : 5 (Fantastique/Surréaliste)")
+    print(" • Période : 2015-2010")
     
     recs = recommend_movies(
         description="film de science-fiction épique avec des voyages dans l'espace",
@@ -162,16 +162,16 @@ def test_scenario_6():
     """Test avec profil utilisateur complexe."""
     print_header("TEST 6 : Profil Utilisateur Complexe")
     
-    print("\n👤 Profil utilisateur :")
-    print("  \"J'aime les thrillers psychologiques sombres avec des intrigues complexes")
-    print("  et des rebondissements. J'ai adoré Se7en et Fight Club.\"")
+    print("\n Profil utilisateur :")
+    print(" \"J'aime les thrillers psychologiques sombres avec des intrigues complexes")
+    print(" et des rebondissements. J'ai adoré Se7en et Fight Club.\"")
     
-    print("\n📊 Paramètres Likert :")
-    print("  • Action           : 3 (Modéré)")
-    print("  • Complexité       : 5 (Puzzle mental)")
-    print("  • Noirceur         : 5 (Très sombre)")
-    print("  • Réalisme         : 2 (Réaliste)")
-    print("  • Période          : 2000-1980")
+    print("\n Paramètres Likert :")
+    print(" • Action : 3 (Modéré)")
+    print(" • Complexité : 5 (Puzzle mental)")
+    print(" • Noirceur : 5 (Très sombre)")
+    print(" • Réalisme : 2 (Réaliste)")
+    print(" • Période : 2000-1980")
     
     recs = recommend_movies(
         description="thriller psychologique sombre avec intrigues complexes et rebondissements",
@@ -220,12 +220,12 @@ def test_query_building():
         )
         
         print(f"\nScénario {i} :")
-        print(f"  Description   : {scenario['desc']}")
-        print(f"  Similaire à   : {scenario['similar']}")
-        print(f"  Likert        : Action={scenario['action']}, Complexité={scenario['complex']}, "
+        print(f" Description : {scenario['desc']}")
+        print(f" Similaire à : {scenario['similar']}")
+        print(f" Likert : Action={scenario['action']}, Complexité={scenario['complex']}, "
               f"Noirceur={scenario['dark']}, Réalisme={scenario['real']}")
-        print(f"  ➡️  Requête enrichie :")
-        print(f"     \"{query}\"")
+        print(f" Requête enrichie :")
+        print(f" \"{query}\"")
 
 if __name__ == "__main__":
     print("\n")
@@ -238,7 +238,7 @@ if __name__ == "__main__":
         # Charger l'index une fois au début
         print("\n⏳ Chargement de l'index des films...")
         df, emb = load_movie_index()
-        print(f"✓ Index chargé : {len(df)} films/TV shows disponibles\n")
+        print(f"OK: Index chargé : {len(df)} films/TV shows disponibles\n")
         
         # Exécuter tous les scénarios de test
         test_scenario_1()
@@ -250,20 +250,20 @@ if __name__ == "__main__":
         test_query_building()
         
         print_separator()
-        print("✅ TOUS LES TESTS SONT TERMINÉS AVEC SUCCÈS")
+        print("OK: TOUS LES TESTS SONT TERMINÉS AVEC SUCCÈS")
         print_separator()
         
-        print("\n📊 Résumé des fonctionnalités testées :")
-        print("  ✓ Description libre")
-        print("  ✓ Titre similaire (preuve contextuelle)")
-        print("  ✓ Échelle de Likert (4 dimensions)")
-        print("  ✓ Filtrage par période (6 tranches temporelles)")
-        print("  ✓ Pondération sémantique")
-        print("  ✓ Recommandations de titres spécifiques (films/TV shows)")
+        print("\n Résumé des fonctionnalités testées :")
+        print(" OK Description libre")
+        print(" OK Titre similaire (preuve contextuelle)")
+        print(" OK Échelle de Likert (4 dimensions)")
+        print(" OK Filtrage par période (6 tranches temporelles)")
+        print(" OK Pondération sémantique")
+        print(" OK Recommandations de titres spécifiques (films/TV shows)")
         print("\n")
         
     except Exception as e:
-        print(f"\n✗ ERREUR : {e}")
+        print(f"\nFAIL ERREUR : {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

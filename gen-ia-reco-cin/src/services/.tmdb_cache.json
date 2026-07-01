@@ -54,5 +54,35 @@
   "MobLand_2025": {
     "poster_path": null,
     "timestamp": "2026-02-02T22:32:52.166708"
+  },
+  "Human Planet_2011": {
+    "poster_path": "/wYTldRShwhGRIn8jxbIsTlkNUv.jpg",
+    "tmdb_id": 1293127,
+    "title": "Astro Boy: Ivan's Planet - Robot and Human Friendship",
+    "timestamp": "2026-07-01T17:34:43.660152"
+  },
+  "Star Wars_1977": {
+    "poster_path": "/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg",
+    "tmdb_id": 11,
+    "title": "Star Wars",
+    "timestamp": "2026-07-01T17:34:44.109881"
+  },
+  "The Empire Strikes Back_1980": {
+    "poster_path": "/nNAeTmF4CtdSgMDplXTDPOpYzsX.jpg",
+    "tmdb_id": 1891,
+    "title": "The Empire Strikes Back",
+    "timestamp": "2026-07-01T17:34:44.544817"
+  },
+  "Cosmos: A Personal Voyage_1980": {
+    "poster_path": "/sG9y6o4DyjHaz4q1LMFoLTpg1fF.jpg",
+    "tmdb_id": 798489,
+    "title": "Attenborough in Paradise",
+    "timestamp": "2026-07-01T17:34:45.392235"
+  },
+  "Cinema Paradiso_1988": {
+    "poster_path": "/gCI2AeMV4IHSewhJkzsur5MEp6R.jpg",
+    "tmdb_id": 11216,
+    "title": "Cinema Paradiso",
+    "timestamp": "2026-07-01T17:34:45.791143"
   }
 }

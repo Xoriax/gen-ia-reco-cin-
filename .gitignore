@@ -114,8 +114,12 @@ venv_test/
 venv_final/
 .venv-new/
 
-# EF4.1: Cache d'enrichissement Gemini
+# EF4.1 / EF4.3: Caches d'enrichissement et de justification Gemini
 .query_cache.json
+.justification_cache.json
+
+# Evaluation grid (user-editable ratings, local only)
+src/data/genai_eval_grid.csv
 
 # Spyder project settings
 .spyderproject
