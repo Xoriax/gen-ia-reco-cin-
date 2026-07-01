@@ -114,5 +114,59 @@
     "tmdb_id": 209112,
     "title": "Batman v Superman: Dawn of Justice",
     "timestamp": "2026-07-01T22:22:41.356671"
+  },
+  "Nightbreed_1990": {
+    "poster_path": "/1ChluYH0BEvJo3gtYoFHnMZI660.jpg",
+    "tmdb_id": 20481,
+    "title": "Nightbreed",
+    "timestamp": "2026-07-01T22:54:28.327631"
+  },
+  "Unsolved Mysteries_2020": {
+    "poster_path": "/ekhAHj1K3zTLE3hO1iXTW6iwiVe.jpg",
+    "tmdb_id": 71434,
+    "title": "Keizoku: Unsolved Mysteries - Beautiful Dreamer",
+    "timestamp": "2026-07-01T22:54:28.380345"
+  },
+  "V/H/S/Beyond_2024": {
+    "poster_path": "/wXaf6VGNHIGU7qivapGOF7o4o4N.jpg",
+    "tmdb_id": 1190868,
+    "title": "V/H/S/Beyond",
+    "timestamp": "2026-07-01T22:54:28.394596"
+  },
+  "Dark Skies_2013": {
+    "poster_path": "/euLgEo2kvuLjYxbfOekWF3l82t6.jpg",
+    "tmdb_id": 145135,
+    "title": "Dark Skies",
+    "timestamp": "2026-07-01T22:54:28.455964"
+  },
+  "Safe_2012": {
+    "poster_path": "/kOCpkoMUVae9UIf85gO71SyjLbW.jpg",
+    "tmdb_id": 72387,
+    "title": "Safe",
+    "timestamp": "2026-07-01T22:56:57.758673"
+  },
+  "The Past_2013": {
+    "poster_path": "/8nff89qjYN3Hck5G33xeRPsM8TZ.jpg",
+    "tmdb_id": 152780,
+    "title": "The Past",
+    "timestamp": "2026-07-01T22:56:57.758733"
+  },
+  "The Missing_2014": {
+    "poster_path": "/86s5nw5F1G8lJtEowO0LBB4hoBW.jpg",
+    "tmdb_id": 12146,
+    "title": "The Missing",
+    "timestamp": "2026-07-01T22:56:57.796370"
+  },
+  "The Conjuring_2013": {
+    "poster_path": "/wVYREutTvI2tmxr6ujrHT704wGF.jpg",
+    "tmdb_id": 138843,
+    "title": "The Conjuring",
+    "timestamp": "2026-07-01T22:56:57.796592"
+  },
+  "Stoker_2013": {
+    "poster_path": "/o0giW5oasaef5m9sgBuq0C7IkIa.jpg",
+    "tmdb_id": 86825,
+    "title": "Stoker",
+    "timestamp": "2026-07-01T22:56:57.796690"
   }
 }

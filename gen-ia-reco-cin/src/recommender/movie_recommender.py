@@ -371,16 +371,17 @@ def recommend_movies(
     period: str = None,
     top_k: int = 3,
     use_weights: bool = True,
-    enable_augmentation: bool = True
+    enable_augmentation: bool = True,
+    enable_justification: bool = True
 ) -> List[Dict]:
     """
     Recommend specific movies/TV shows based on user criteria.
-    
+
     Uses weighted scoring formula:
     SCORE_FINAL = (FREE_FORM × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE_WEIGHT × 0.20) + (COSINE × 0.30)
-    
+
     All similarity calculations use Hugging Face SentenceTransformer embeddings (no external APIs).
-    
+
     Args:
         description: Free-form description of desired movie
         similar_title: Title of a similar movie (matched semantically in dataset)
@@ -392,7 +393,10 @@ def recommend_movies(
         top_k: Number of recommendations
         use_weights: Apply Likert weighting
         enable_augmentation: EF4.1 - Enable automatic enrichment of short queries
-    
+        enable_justification: EF4.3 - Generate the GenAI justification text.
+            Set to False for pure scoring comparisons (e.g. the evaluation
+            dashboard's before/after test) to skip the LLM call entirely.
+
     Returns:
         List of dictionaries with recommendations
     """
@@ -532,7 +536,7 @@ def recommend_movies(
     
     # Generate GenAI-powered personalized justification
     genai_justification = None
-    if len(recommendations) > 0:
+    if enable_justification and len(recommendations) > 0:
         # Identify priority elements (lowest contributing factors)
         scores_breakdown = {
             "description_similarity": 0.25,

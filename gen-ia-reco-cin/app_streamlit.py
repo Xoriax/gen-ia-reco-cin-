@@ -67,6 +67,16 @@ def get_index():
     return load_movie_index()
 
 
+def one_liner(description: str, max_len: int = 110) -> str:
+    """Shortens a movie description to a single display line (first sentence, capped in length)."""
+    if not description:
+        return ""
+    first_sentence = description.split(". ")[0].strip()
+    if len(first_sentence) > max_len:
+        return first_sentence[:max_len].rsplit(" ", 1)[0].rstrip(".,;: ") + "..."
+    return first_sentence + ("." if not first_sentence.endswith(".") else "")
+
+
 def render_recommendation_tab():
     st.title("CineMatch")
     st.caption("Décrivez le film que vous cherchez, on s'occupe du reste - analyse sémantique + IA générative.")
@@ -140,6 +150,7 @@ def render_recommendation_tab():
             st.markdown(f"**{rec['title']}** ({rec.get('year', '?')})")
             st.caption(rec.get("genre", ""))
             st.markdown(f'<span class="movie-score">Score : {rec["score"]:.0%}</span>', unsafe_allow_html=True)
+            st.caption(one_liner(rec.get("description", "")))
             st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -152,13 +163,28 @@ def render_evaluation_tab():
 
     st.subheader("1. Distribution des scores de la dernière recommandation")
     if result and result.get("recommendations"):
-        dist_df = metrics.compute_score_distribution(result["recommendations"])
-        st.plotly_chart(px.bar(dist_df, x="title", y="score", labels={"score": "Score final"}),
-                         width="stretch")
-
+        insights = metrics.compute_score_insights(result["recommendations"])
         diversity = metrics.compute_genre_diversity(result["recommendations"])
-        st.metric("Genres uniques dans le top résultats", diversity["unique_genres"])
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Meilleur score", f"{insights['top_score']:.0%}")
+        c2.metric("Score moyen (top-k)", f"{insights['avg_score']:.0%}")
+        c3.metric("Écart top / dernier", f"{insights['spread']:.1%}")
+        c4.metric("Genres uniques", diversity["unique_genres"])
         st.caption(", ".join(diversity["genres"]))
+
+        dist_df = metrics.compute_score_distribution(result["recommendations"])
+        fig = px.bar(
+            dist_df, x="title", y="score", labels={"score": "Score final", "title": ""},
+            text=dist_df["score"].map(lambda s: f"{s:.0%}"),
+        )
+        fig.update_traces(textposition="outside")
+        # Zoom the y-axis around the actual score range instead of 0-1, so
+        # tightly-clustered scores (e.g. 50-54%) are still visually distinguishable.
+        y_min = max(0, dist_df["score"].min() - 0.1)
+        y_max = min(1, dist_df["score"].max() + 0.1)
+        fig.update_yaxes(range=[y_min, y_max])
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("Lancez d'abord une recommandation dans l'onglet 'Recommandation'.")
 

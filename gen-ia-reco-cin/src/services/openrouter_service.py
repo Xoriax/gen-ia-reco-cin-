@@ -1,8 +1,13 @@
 """
 Centralized OpenRouter GenAI service.
-Wraps every call to the OpenRouter API (model: nvidia/nemotron-3-ultra:free) with
+Wraps every call to the OpenRouter API (model: nvidia/nemotron-nano-9b-v2:free) with
 caching, latency measurement, call logging (for the evaluation dashboard) and a
 safe local fallback when the API key is missing or the request fails.
+
+Note: nvidia/nemotron-3-ultra-550b-a55b:free (the original 550B MoE model) was
+measured at 18-148s per call in production logs - unusable for an interactive
+UI. Swapped for the 9B nano variant (~6s per call) which is the right
+size/latency trade-off for a short justification prompt.
 """
 import json
 import os
@@ -15,7 +20,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+OPENROUTER_MODEL = "nvidia/nemotron-nano-9b-v2:free"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 

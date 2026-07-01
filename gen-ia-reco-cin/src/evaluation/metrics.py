@@ -52,6 +52,23 @@ def compute_score_distribution(recommendations: List[Dict]) -> pd.DataFrame:
     ])
 
 
+def compute_score_insights(recommendations: List[Dict]) -> Dict:
+    """
+    Summarizes the recommendation set's score distribution as a few KPIs
+    instead of a bar chart alone (whose bars look near-identical when scores
+    cluster tightly, e.g. 50-54%, which hides the actual signal).
+    """
+    scores = [r.get("score", 0.0) for r in recommendations]
+    if not scores:
+        return {"top_score": 0.0, "avg_score": 0.0, "spread": 0.0, "count": 0}
+    return {
+        "top_score": max(scores),
+        "avg_score": sum(scores) / len(scores),
+        "spread": max(scores) - min(scores),
+        "count": len(scores),
+    }
+
+
 def compute_before_after_enrichment(recommend_fn, description: str, **kwargs) -> Dict:
     """
     Runs the same request with and without EF4.1 OpenRouter enrichment and compares
@@ -62,9 +79,16 @@ def compute_before_after_enrichment(recommend_fn, description: str, **kwargs) ->
             circular import between recommender and evaluation modules).
         description: free-form description to test.
         kwargs: other recommend_movies parameters (Likert sliders, period, top_k...).
+
+    Note: this only cares about the score delta from EF4.1 enrichment, so the
+    EF4.3 justification call is disabled here - it's a separate, unrelated
+    LLM call that would otherwise double the number of API calls and latency
+    of this comparison for no benefit.
     """
-    without = recommend_fn(description=description, enable_augmentation=False, **kwargs)
-    with_ = recommend_fn(description=description, enable_augmentation=True, **kwargs)
+    without = recommend_fn(description=description, enable_augmentation=False,
+                            enable_justification=False, **kwargs)
+    with_ = recommend_fn(description=description, enable_augmentation=True,
+                          enable_justification=False, **kwargs)
 
     without_top = without["recommendations"][0] if without["recommendations"] else None
     with_top = with_["recommendations"][0] if with_["recommendations"] else None

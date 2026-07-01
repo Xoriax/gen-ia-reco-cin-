@@ -135,10 +135,11 @@ Ouvrez votre navigateur à l'adresse indiquée par Streamlit (par défaut **http
 
 **Onglet Recommandation :**
 - Questionnaire hybride (texte libre, titre similaire, sliders Likert, période)
-- Résultats avec posters, scores et justification OpenRouter
+- Résultats avec posters (récupérés en parallèle via `ThreadPoolExecutor`), scores, description en une ligne par film et justification OpenRouter
 
 **Onglet Évaluation :**
-- Distribution des scores, comparaison avant/après enrichissement OpenRouter
+- KPIs de score (meilleur score, score moyen, écart top/dernier, genres uniques) + graphique zoomé sur la plage réelle des scores, plus lisible qu'un simple bar chart quand les scores sont proches
+- Comparaison avant/après enrichissement OpenRouter (sans appel de justification, pour rester rapide)
 - Comparaison de réglages (température), cache hit rate, latence
 - Grille d'évaluation manuelle des générations, limites & risques identifiés
 
@@ -245,7 +246,7 @@ gen-ia-reco-cin/
 │   ├── services/
 │   │   ├── ref.py                      # Service de référentiel BlockID
 │   │   ├── tmdb_service.py             # Intégration API TMDB (posters)
-│   │   └── openrouter_service.py           # Appel OpenRouter centralisé (cache, log, fallback)
+│   │   └── openrouter_service.py       # Appel OpenRouter centralisé (cache, log, fallback)
 │   │
 │   ├── utils/
 │   │   ├── query_augmentation.py       # Enrichissement via OpenRouter (EF4.1)
@@ -285,7 +286,8 @@ gen-ia-reco-cin/
 |-------------|-------|
 | **Streamlit** | Interface web (questionnaire + dashboard) |
 | **Plotly** | Graphiques du dashboard d'évaluation |
-| **TMDB API** | Récupération des posters |
+| **PyArrow** | Lecture/écriture du format Parquet (`movies.parquet`) |
+| **TMDB API** | Récupération des posters (appels parallélisés via `ThreadPoolExecutor`) |
 
 ### Tests & Développement
 
@@ -340,15 +342,18 @@ Il pagine `movie/top_rated` et `tv/top_rated` jusqu'à 10 000 titres chacun (lim
 
 ### Formule de Score
 
-Le score final combine plusieurs composantes :
+Le score final combine 4 composantes (voir `recommend_movies()` dans `movie_recommender.py`) :
 
 ```
-Score Final = (α × Similarité_Sémantique) + (β × Score_Likert)
+Score Final = (DESC × 0.25) + (SIMILAR_TITLE × 0.25) + (GENRE × 0.20) + (QUERY × 0.30)
 
 où :
-- Similarité_Sémantique : Cosinus entre embedding requête et embedding film
-- Score_Likert : Pondération basée sur les critères Likert
-- α, β : Coefficients de balance (configurables)
+- DESC         : similarité cosinus entre la description libre et chaque description de film
+                 (embeddings pré-calculés, voir section Performance)
+- SIMILAR_TITLE : similarité cosinus avec le contexte agrégé des films proches du titre similaire fourni
+- GENRE        : poids normalisé [0.67, 1.0] issu de calculate_likert_weights() selon les 4 sliders
+- QUERY        : similarité cosinus entre la requête enrichie complète (texte + mots-clés Likert) et
+                 l'embedding combiné Titre+Description+Genre+Catégorie de chaque film
 ```
 
 ### Pipeline de Recommandation
@@ -375,22 +380,25 @@ Modifiez dans [movie_recommender.py](gen-ia-reco-cin/src/recommender/movie_recom
 
 ```python
 MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"  # Modèle d'embeddings
-DEFAULT_TOP_K = 5                                        # Nombre de recommandations
-AUGMENTATION_WORD_THRESHOLD = 5                          # Seuil enrichissement
 ```
+
+Le seuil d'enrichissement EF4.1 (`WORD_THRESHOLD = 5`) se trouve dans [query_augmentation.py](gen-ia-reco-cin/src/utils/query_augmentation.py), et le modèle OpenRouter (`OPENROUTER_MODEL`) dans [openrouter_service.py](gen-ia-reco-cin/src/services/openrouter_service.py).
 
 ### Coefficients de Pondération
 
-Ajustez les poids des critères Likert dans `calculate_likert_weights()` :
+Ajustez les poids par genre selon les critères Likert dans `calculate_likert_weights()` (ex. pour une action intensity élevée) :
 
 ```python
-weights = {
-    'action': action_intensity * 0.3,
-    'complexity': narrative_complexity * 0.25,
-    'darkness': darkness * 0.25,
-    'realism': realism * 0.2
-}
+if action_intensity >= 4:
+    weights.update({
+        "Action": 1.5,
+        "Adventure": 1.3,
+        "Thriller": 1.2,
+        "War": 1.2
+    })
 ```
+
+Ces poids sont ensuite normalisés dans `[0.67, 1.0]` avant d'entrer dans la formule de score finale (composante GENRE, 20% du score).
 
 ---
 
@@ -474,12 +482,23 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 2. Pulp Fiction (1994) - Score: 0.3999
 3. Le Trou (1960) - Score: 0.4072
 
+*Exemple historique sur l'ancien jeu de données (~200 films). Avec la base actuelle (12 000+ titres), les scores et le classement varient - voir le dashboard Évaluation pour les KPIs à jour sur tes propres requêtes.*
+
 ## Performance
 
 - Base de données : 12 000+ films/TV shows
 - Précision : Embeddings 384 dimensions
 - Mémoire : index d'embeddings ~23 Mo (12k lignes x 384 dimensions)
 - Latence OpenRouter (EF4.1/EF4.3) : voir dashboard Évaluation (mesurée en direct par appel)
+
+### Optimisations appliquées pour tenir la charge à 12 000+ lignes
+
+Le passage de ~200 à 12 000+ films a rendu visibles plusieurs coûts qui étaient négligeables sur un petit jeu de données :
+
+- **Embeddings de description pré-calculés** : `build_and_save_movie_index()` calcule désormais aussi les embeddings de chaque description à la construction de l'index (stockés dans `referentiel_movies.pkl`), au lieu de ré-encoder les 12 000+ descriptions à chaque requête. Les anciens index sans ce champ sont migrés automatiquement à la volée.
+- **Lecture Parquet** : `load_movies_df()` lit `movies.parquet` en priorité (plus rapide à parser que le CSV), avec repli sur le CSV si le Parquet est absent.
+- **Récupération des posters en parallèle** : les appels TMDB (un par film recommandé) étaient séquentiels et bloquants ; ils sont maintenant lancés en concurrence via `ThreadPoolExecutor`.
+- **Résultat mesuré** : une requête à froid (modèle + index déjà chargés) prend environ 0.3s pour le scoring pur, contre plusieurs dizaines de secondes avant optimisation à cette échelle.
 
 ---
 
@@ -492,9 +511,11 @@ Cette section reprend la structure conseillée par la grille de notation "Projet
 2. **Justification de recommandation (EF4.3)** : une fois le top 3 sélectionné par le scoring SBERT, OpenRouter rédige une synthèse narrative qui explique pourquoi ces films correspondent au profil Likert/texte libre de l'utilisateur, apportant une valeur pédagogique et UX sans jamais influencer le choix des films eux-mêmes.
 
 ### Choix du modèle et de l'approche
-- **Modèle** : `nvidia/nemotron-3-ultra-550b-a55b:free` (via OpenRouter, gratuit, adapté à un usage limité à 1 appel par sortie).
+- **Modèle** : `nvidia/nemotron-nano-9b-v2:free` (via OpenRouter, gratuit, adapté à un usage limité à 1 appel par sortie).
+- **Ajustement mesuré** : le modèle initialement choisi, `nvidia/nemotron-3-ultra-550b-a55b:free` (550 milliards de paramètres), a été mesuré en conditions réelles entre **18 et 148 secondes par appel** (voir les logs `genai_calls_log.jsonl`), ce qui le rend inutilisable pour une interface interactive. Après benchmark comparatif de plusieurs modèles gratuits (voir onglet Évaluation, section "Comparaison de réglages"), le remplacement par la variante 9B a ramené le temps de justification à **~6-9 secondes**, pour une qualité de synthèse toujours pertinente.
 - **Grounding** : le prompt de justification liste explicitement les films déjà sélectionnés par SBERT. OpenRouter commente, il ne recommande pas, ce qui réduit le risque d'hallucination.
-- **Sobriété** : cache local par usage (`.query_cache.json`, `.justification_cache.json`) + fallback local automatique si la clé API est absente ou l'appel échoue, pour respecter la contrainte "une seule requête API par type de sortie" et ne jamais bloquer la démo.
+- **Longueur contrôlée** : le prompt EF4.3 impose une cible stricte de 250-300 caractères, avec un filet de sécurité côté code (`_enforce_length()`) qui tronque proprement si le modèle dépasse cette limite.
+- **Sobriété** : cache local par usage (`.query_cache.json`, `.justification_cache.json`) + fallback local automatique si la clé API est absente ou l'appel échoue, pour respecter la contrainte "une seule requête API par type de sortie" et ne jamais bloquer la démo. Le test "avant/après enrichissement" du dashboard désactive volontairement la génération de justification (`enable_justification=False`) puisqu'il ne mesure que l'effet sur le score, évitant ainsi 2 appels LLM inutiles à chaque clic.
 
 ### Solution développée
 - `src/services/openrouter_service.py` centralise tous les appels (cache, mesure de latence, log JSONL, fallback).
