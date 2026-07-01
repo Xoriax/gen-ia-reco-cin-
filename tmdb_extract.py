@@ -39,7 +39,7 @@ OUTPUT_CSV = ROOT / "gen-ia-reco-cin" / "src" / "data" / "movies.csv"
 OUTPUT_PARQUET = ROOT / "gen-ia-reco-cin" / "src" / "data" / "movies.parquet"
 STALE_INDEX_FILES = ["referentiel_movies.pkl", "referentiel_blockid.pkl"]
 
-FIELDNAMES = ["FilmID", "BlockID", "Catégorie", "Genre", "genre_ids", "Année", "Film", "Description narrative"]
+FIELDNAMES = ["FilmID", "BlockID", "Category", "Genre", "genre_ids", "Year", "Title", "Description"]
 
 
 _PUNCT_REPLACEMENTS = {
@@ -134,12 +134,12 @@ def get_top_items(endpoint, category, genres_map, target_count):
             items.append({
                 "FilmID": item_id,
                 "BlockID": remove_accents(block_id),
-                "Catégorie": remove_accents(category),
+                "Category": remove_accents(category),
                 "Genre": remove_accents(all_genres),
                 "genre_ids": ",".join(str(gid) for gid in genre_ids),
-                "Année": year,
-                "Film": remove_accents(result.get("title") or result.get("name") or ""),
-                "Description narrative": remove_accents(overview),
+                "Year": year,
+                "Title": remove_accents(result.get("title") or result.get("name") or ""),
+                "Description": remove_accents(overview),
             })
 
             if len(items) >= target_count:

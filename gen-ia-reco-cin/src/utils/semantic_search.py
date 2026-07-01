@@ -69,7 +69,7 @@ def find_similar_movies_in_dataset(
             break
         
         row = df.iloc[idx]
-        movie_title = str(row.get('Film', ''))
+        movie_title = str(row.get('Title', ''))
         similarity = float(similarities[idx])
         
         # Optionally exclude exact matches or very similar titles
@@ -78,10 +78,10 @@ def find_similar_movies_in_dataset(
         
         similar_movies.append({
             "title": movie_title,
-            "year": int(row.get('Année', 0)),
-            "category": str(row.get('Catégorie', '')),
+            "year": int(row.get('Year', 0)),
+            "category": str(row.get('Category', '')),
             "genre": str(row.get('Genre', '')),
-            "description": str(row.get('Description narrative', '')),
+            "description": str(row.get('Description', '')),
             "similarity": similarity
         })
         count += 1

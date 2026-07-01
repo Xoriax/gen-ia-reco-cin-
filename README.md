@@ -232,7 +232,8 @@ gen-ia-reco-cin/
 │
 ├── src/                                # Code source
 │   ├── data/
-│   │   ├── movies.csv                  # Base de données (200+ films/séries)
+│   │   ├── movies.csv                  # Base de données (12 000+ films/séries)
+│   │   ├── movies.parquet              # Même base de données, format Parquet
 │   │   ├── referentiel_movies.pkl      # Index avec embeddings pré-calculés
 │   │   ├── referentiel_blockid.pkl     # Index des BlockID
 │   │   ├── genai_calls_log.jsonl       # Log des appels Gemini (preuve pour évaluation)
@@ -301,21 +302,37 @@ gen-ia-reco-cin/
 
 ### Contenu
 
-- **200+ films et séries TV** référencés
-- **Métadonnées complètes** : Titre, année, genre, catégorie, description narrative
+- **12 000+ films et séries TV** référencés (extraits via `tmdb_extract.py` depuis TMDB, `movie/top_rated` + `tv/top_rated`)
+- **Métadonnées complètes** : titre, année, genre, catégorie, description
 - **Classifications thématiques** : BlockID pour catégorisation fine
 - **Embeddings pré-calculés** : Performance optimale (pas de calcul à la volée)
+- **Format** : CSV et Parquet (`src/data/movies.csv` / `movies.parquet`), moins de 10 Mo à eux deux
 
 ### Champs Disponibles
 
+Noms de colonnes en anglais (évite les problèmes d'accents/encodage) :
+
 | Champ | Description |
 |-------|-------------|
-| `Film` | Titre du film/série |
-| `Année` | Année de sortie |
-| `Genre` | Genre principal |
-| `Catégorie` | Film ou TV Show |
-| `Description narrative` | Synopsis détaillé |
-| `BlockID` | Identifiant thématique |
+| `FilmID` | Identifiant TMDB |
+| `Title` | Titre du film/série |
+| `Year` | Année de sortie |
+| `Genre` | Genres (séparés par virgule) |
+| `genre_ids` | IDs de genres TMDB |
+| `Category` | Film ou TVShow |
+| `Description` | Synopsis |
+| `BlockID` | Identifiant thématique (= premier genre) |
+
+### Régénérer la base de données
+
+Le script `tmdb_extract.py` (à la racine du repo) reconstruit `movies.csv`/`movies.parquet` depuis TMDB :
+
+```bash
+# Nécessite TMDB_BEARER_TOKEN dans .env (auth v4, distinct de TMDB_API_KEY)
+python tmdb_extract.py
+```
+
+Il pagine `movie/top_rated` et `tv/top_rated` jusqu'à 10 000 titres chacun (limite réelle de TMDB, pas du script), filtre les entrées sans description (inutilisables pour les embeddings SBERT), et supprime automatiquement les index d'embeddings devenus obsolètes (`referentiel_movies.pkl`, `referentiel_blockid.pkl`) pour qu'ils soient reconstruits au prochain lancement de l'application.
 
 ---
 
@@ -459,9 +476,9 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 
 ## Performance
 
-- Base de données : 200 films/TV shows
+- Base de données : 12 000+ films/TV shows
 - Précision : Embeddings 384 dimensions
-- Mémoire : ~50MB pour l'index
+- Mémoire : index d'embeddings ~23 Mo (12k lignes x 384 dimensions)
 - Latence Gemini (EF4.1/EF4.3) : voir dashboard Évaluation (mesurée en direct par appel)
 
 ---

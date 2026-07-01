@@ -39,7 +39,7 @@ def load_movies_df(csv_path: str = None) -> pd.DataFrame:
     p = Path(csv_path) if csv_path else DEFAULT_CSV
     df = pd.read_csv(p, dtype=str, keep_default_na=False)
     # Convert year to numeric for filtering
-    df['Année'] = pd.to_numeric(df['Année'], errors='coerce')
+    df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
     return df
 
 def build_movie_embeddings(df: pd.DataFrame) -> np.ndarray:
@@ -54,10 +54,10 @@ def build_movie_embeddings(df: pd.DataFrame) -> np.ndarray:
     for _, row in df.iterrows():
         # Combine multiple fields for richer embedding
         text_parts = [
-            f"Title: {row.get('Film', '')}",
-            f"Description: {row.get('Description narrative', '')}",
+            f"Title: {row.get('Title', '')}",
+            f"Description: {row.get('Description', '')}",
             f"Genre: {row.get('Genre', '')}",
-            f"Category: {row.get('Catégorie', '')}",
+            f"Category: {row.get('Category', '')}",
             f"BlockID: {row.get('BlockID', '')}"
         ]
         combined_text = " ".join(text_parts)
@@ -106,17 +106,17 @@ def filter_by_period(df: pd.DataFrame, period: str) -> pd.DataFrame:
     - "1980<" : < 1980
     """
     if period == "present-2020":
-        return df[df['Année'] >= 2020]
+        return df[df['Year'] >= 2020]
     elif period == "2020-2015":
-        return df[(df['Année'] >= 2015) & (df['Année'] < 2020)]
+        return df[(df['Year'] >= 2015) & (df['Year'] < 2020)]
     elif period == "2015-2010":
-        return df[(df['Année'] >= 2010) & (df['Année'] < 2015)]
+        return df[(df['Year'] >= 2010) & (df['Year'] < 2015)]
     elif period == "2010-2000":
-        return df[(df['Année'] >= 2000) & (df['Année'] < 2010)]
+        return df[(df['Year'] >= 2000) & (df['Year'] < 2010)]
     elif period == "2000-1980":
-        return df[(df['Année'] >= 1980) & (df['Année'] < 2000)]
+        return df[(df['Year'] >= 1980) & (df['Year'] < 2000)]
     elif period == "1980<":
-        return df[df['Année'] < 1980]
+        return df[df['Year'] < 1980]
     else:
         return df  # No filter
 
@@ -378,7 +378,7 @@ def recommend_movies(
     # as the dataset grows to tens of thousands of rows)
     if description:
         desc_emb = embed_text([description])
-        movie_descs = df_filtered['Description narrative'].fillna('').astype(str).tolist()
+        movie_descs = df_filtered['Description'].fillna('').astype(str).tolist()
         movie_desc_embs = embed_text(movie_descs)
         desc_sims = cosine_similarity(desc_emb, movie_desc_embs)[0]
     else:
@@ -455,15 +455,15 @@ def recommend_movies(
     recommendations = []
     for idx in top_indices:
         row = df_filtered.iloc[idx]
-        movie_title = str(row.get('Film', ''))
+        movie_title = str(row.get('Title', ''))
         movie_genre = str(row.get('Genre', ''))
-        movie_desc = str(row.get('Description narrative', ''))
+        movie_desc = str(row.get('Description', ''))
         score = float(final_scores[idx])
         
         recommendations.append({
             "title": movie_title,
-            "year": int(row.get('Année', 0)),
-            "category": str(row.get('Catégorie', '')),
+            "year": int(row.get('Year', 0)),
+            "category": str(row.get('Category', '')),
             "genre": movie_genre,
             "blockid": str(row.get('BlockID', '')),
             "description": movie_desc,
