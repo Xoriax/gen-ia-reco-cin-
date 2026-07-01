@@ -1,6 +1,6 @@
 """
 Test unitaire pour EF4.1 : Augmentation de l'Entrée (Pre-Processing)
-Teste l'enrichissement automatique des requêtes courtes via Gemini AI.
+Teste l'enrichissement automatique des requêtes courtes via OpenRouter AI.
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src" / "utils"))
 
 from query_augmentation import (
     is_query_too_short,
-    augment_query_with_gemini,
+    augment_query_with_openrouter,
     WORD_THRESHOLD
 )
 
@@ -56,10 +56,10 @@ def test_is_query_too_short():
     
     print(f"\nOK Test 1 réussi : Détection correcte des requêtes courtes\n")
 
-def test_augmentation_with_gemini():
-    """Test de l'augmentation avec Gemini (nécessite clé API)."""
+def test_augmentation_with_openrouter():
+    """Test de l'augmentation avec OpenRouter (nécessite clé API)."""
     print("="*80)
-    print("TEST 2 : Augmentation avec Gemini AI")
+    print("TEST 2 : Augmentation avec OpenRouter AI")
     print("="*80)
     
     # CAS 1 : Requêtes COURTES (< 5 mots) - DOIVENT être enrichies
@@ -77,7 +77,7 @@ def test_augmentation_with_gemini():
         word_count_original = len(query.split())
         print(f"\n Test : '{query}' ({word_count_original} mots < 5)")
         
-        enriched = augment_query_with_gemini(query)
+        enriched = augment_query_with_openrouter(query)
         word_count_enriched = len(enriched.split())
         
         print(f" Entrée : {query}")
@@ -86,7 +86,7 @@ def test_augmentation_with_gemini():
         
         # Vérifications de qualité
         if word_count_enriched <= word_count_original:
-            print(f" FAIL ÉCHEC : Pas d'enrichissement (vérifiez GEMINI_API_KEY)")
+            print(f" FAIL ÉCHEC : Pas d'enrichissement (vérifiez OPENROUTER_API_KEY)")
         elif enriched.strip().startswith(query + " :") or enriched.strip() == query + " :":
             print(f" FAIL ÉCHEC : Enrichissement de mauvaise qualité (juste '{query} :')")
         elif word_count_enriched >= word_count_original + 5:
@@ -109,18 +109,18 @@ def test_augmentation_with_gemini():
         word_count = len(query.split())
         print(f"\n Test : '{query[:50]}...' ({word_count} mots >= 5)")
         
-        enriched = augment_query_with_gemini(query)
-        
+        enriched = augment_query_with_openrouter(query)
+
         print(f" Entrée : {query}")
         print(f" Sortie : {enriched}")
-        
+
         if enriched == query:
             print(f" OK SUCCÈS : Requête non modifiée (comme attendu)")
         else:
             print(f" FAIL ÉCHEC : Requête modifiée alors qu'elle était déjà longue")
             assert False, "Une requête longue ne devrait pas être modifiée"
     
-    print(f"\nOK Test 2 réussi : Augmentation Gemini fonctionnelle\n")
+    print(f"\nOK Test 2 réussi : Augmentation OpenRouter fonctionnelle\n")
 
 def test_integration():
     """Test de l'intégration avec movie_recommender."""
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     print("="*80 + "\n")
     
     test_is_query_too_short()
-    test_augmentation_with_gemini()
+    test_augmentation_with_openrouter()
     test_integration()
     
     print("="*80)
@@ -166,5 +166,5 @@ if __name__ == "__main__":
     print("\nRésumé:")
     print(" OK Détection des requêtes courtes")
     print(" OK Logique conditionnelle (< 5 mots)")
-    print(" OK Enrichissement Gemini (si clé API)")
+    print(" OK Enrichissement OpenRouter (si clé API)")
     print(" OK Intégration avec movie_recommender")

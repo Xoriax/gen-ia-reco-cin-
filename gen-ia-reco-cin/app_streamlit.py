@@ -1,10 +1,11 @@
 """
 Streamlit application for the movie recommendation system.
 Replaces the previous Flask + HTML/JS frontend with a single Python app:
-- "Recommandation" tab: hybrid questionnaire (EF1.1) + SBERT-based results + Gemini justification (EF4.3)
+- "Recommandation" tab: hybrid questionnaire (EF1.1) + SBERT-based results + OpenRouter justification (EF4.3)
 - "Évaluation" tab: dashboard for generated-results evaluation (C5.3)
 """
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
@@ -121,10 +122,18 @@ def render_recommendation_tab():
                      unsafe_allow_html=True)
 
     st.subheader("Vos recommandations")
+
+    # Poster lookups are independent network calls (TMDB) - fetch them
+    # concurrently instead of one blocking request per card.
+    with ThreadPoolExecutor(max_workers=len(recommendations) or 1) as pool:
+        poster_urls = list(pool.map(
+            lambda rec: fetch_movie_poster(rec["title"], rec.get("year")),
+            recommendations,
+        ))
+
     cols = st.columns(min(len(recommendations), 5) or 1)
-    for col, rec in zip(cols, recommendations):
+    for col, rec, poster_url in zip(cols, recommendations, poster_urls):
         with col:
-            poster_url = fetch_movie_poster(rec["title"], rec.get("year"))
             st.markdown('<div class="movie-card">', unsafe_allow_html=True)
             if poster_url:
                 st.image(poster_url, width="stretch")
@@ -136,7 +145,7 @@ def render_recommendation_tab():
 
 def render_evaluation_tab():
     st.title("Évaluation des résultats générés")
-    st.caption("Preuves d'usage de Gemini : distribution des scores, comparaison avant/après, coûts et limites.")
+    st.caption("Preuves d'usage de OpenRouter : distribution des scores, comparaison avant/après, coûts et limites.")
 
     log_df = metrics.load_genai_log()
     result = st.session_state.get("last_result")
@@ -153,9 +162,9 @@ def render_evaluation_tab():
     else:
         st.info("Lancez d'abord une recommandation dans l'onglet 'Recommandation'.")
 
-    st.subheader("2. Comparaison avant / après enrichissement Gemini (EF4.1)")
+    st.subheader("2. Comparaison avant / après enrichissement OpenRouter (EF4.1)")
     test_query = st.text_input("Requête courte à tester", value="action")
-    if st.button("Comparer avec / sans enrichissement Gemini"):
+    if st.button("Comparer avec / sans enrichissement OpenRouter"):
         with st.spinner("Exécution des deux scénarios..."):
             comparison = metrics.compute_before_after_enrichment(recommend_movies, description=test_query, top_k=3)
         c1, c2 = st.columns(2)
@@ -164,18 +173,18 @@ def render_evaluation_tab():
             top = comparison["without_enrichment"]
             st.write(f"{top['title']} - score {top['score']:.1%}" if top else "Aucun résultat")
         with c2:
-            st.markdown("**Avec enrichissement Gemini**")
+            st.markdown("**Avec enrichissement OpenRouter**")
             top = comparison["with_enrichment"]
             st.write(f"{top['title']} - score {top['score']:.1%}" if top else "Aucun résultat")
         st.metric("Delta de score sur le top résultat", f"{comparison['score_delta']:+.1%}")
 
-    st.subheader("3. Comparaison de réglages (ajustement de la température Gemini)")
+    st.subheader("3. Comparaison de réglages (ajustement de la température OpenRouter)")
     tuning_prompt = st.text_area(
         "Prompt à tester avec deux températures différentes",
         value="Explique en 2 phrases pourquoi Inception plaît aux amateurs de thrillers psychologiques.",
     )
     if st.button("Comparer les réglages"):
-        with st.spinner("Appel Gemini avec temperature=0.2 puis 0.9..."):
+        with st.spinner("Appel OpenRouter avec temperature=0.2 puis 0.9..."):
             temp_comp = metrics.compute_temperature_comparison(tuning_prompt)
         c1, c2 = st.columns(2)
         with c1:
@@ -187,7 +196,7 @@ def render_evaluation_tab():
             st.write(temp_comp["temperature_0_9"]["text"])
             st.caption(f"{temp_comp['temperature_0_9']['length']} mots")
 
-    st.subheader("4. Cache, coût et latence des appels Gemini")
+    st.subheader("4. Cache, coût et latence des appels OpenRouter")
     hit_rate = metrics.compute_cache_hit_rate(log_df)
     latency = metrics.compute_latency_stats(log_df)
     c1, c2, c3, c4 = st.columns(4)
@@ -220,12 +229,12 @@ def render_evaluation_tab():
             metrics.save_eval_grid(edited)
             st.success("Grille d'évaluation enregistrée.")
     else:
-        st.info("Aucun appel Gemini réel enregistré pour le moment.")
+        st.info("Aucun appel OpenRouter réel enregistré pour le moment.")
 
     st.subheader("6. Limites & risques identifiés")
     st.markdown(
         """
-        - **Hallucination** : Gemini ne choisit jamais les films, il commente uniquement le top 3 déjà
+        - **Hallucination** : OpenRouter ne choisit jamais les films, il commente uniquement le top 3 déjà
           sélectionné par le scoring SBERT, ce qui limite le risque d'invention de titres inexistants.
         - **Dépendance externe / coût** : chaque appel consomme du quota API ; un cache local et un
           fallback automatique évitent les appels redondants ou les pannes bloquantes.
@@ -233,7 +242,7 @@ def render_evaluation_tab():
         - **Biais du modèle** : tendance à privilégier des œuvres anglophones/populaires dans ses reformulations.
         - **Absence de garantie factuelle** : le texte généré est une justification narrative, pas une
           vérité vérifiée. Les métadonnées affichées (année, score, genre) proviennent uniquement du
-          référentiel local (CSV + SBERT), jamais de Gemini.
+          référentiel local (CSV + SBERT), jamais de OpenRouter.
         """
     )
 

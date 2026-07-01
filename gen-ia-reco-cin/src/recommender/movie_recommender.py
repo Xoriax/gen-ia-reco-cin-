@@ -19,14 +19,19 @@ import sys
 
 # Import augmentation module (EF4.1)
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.utils.query_augmentation import augment_query_with_gemini
+from src.utils.query_augmentation import augment_query_with_openrouter
 from src.utils.semantic_search import find_similar_movies_in_dataset, aggregate_similar_movies_context
 from src.utils.genai_justification import generate_recommendation_justification
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L12-v2"
 _MODEL: Optional[SentenceTransformer] = None
 DEFAULT_CSV = Path(__file__).resolve().parents[1] / "data" / "movies.csv"
+DEFAULT_PARQUET = Path(__file__).resolve().parents[1] / "data" / "movies.parquet"
 DEFAULT_PICKLE = Path(__file__).resolve().parents[1] / "data" / "referentiel_movies.pkl"
+
+# In-memory cache of the loaded index (df, full embeddings, description-only
+# embeddings), so the pkl is read from disk at most once per process.
+_INDEX_CACHE: Optional[dict] = None
 
 def get_model() -> SentenceTransformer:
     global _MODEL
@@ -35,9 +40,18 @@ def get_model() -> SentenceTransformer:
     return _MODEL
 
 def load_movies_df(csv_path: str = None) -> pd.DataFrame:
-    """Load complete DataFrame of movies/TV shows."""
-    p = Path(csv_path) if csv_path else DEFAULT_CSV
-    df = pd.read_csv(p, dtype=str, keep_default_na=False)
+    """
+    Load complete DataFrame of movies/TV shows. Prefers the Parquet twin
+    (faster to parse than CSV, especially at 10k+ rows) and only falls back
+    to CSV if no explicit csv_path was given and the Parquet file is missing.
+    """
+    if csv_path is None and DEFAULT_PARQUET.exists():
+        # Parquet was written from the same all-string dataframe as the CSV
+        # (see tmdb_extract.py), so dtypes/empty-string handling match already.
+        df = pd.read_parquet(DEFAULT_PARQUET)
+    else:
+        p = Path(csv_path) if csv_path else DEFAULT_CSV
+        df = pd.read_csv(p, dtype=str, keep_default_na=False)
     # Convert year to numeric for filtering
     df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
     return df
@@ -65,28 +79,72 @@ def build_movie_embeddings(df: pd.DataFrame) -> np.ndarray:
     
     return model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
 
+def build_description_embeddings(df: pd.DataFrame) -> np.ndarray:
+    """
+    Pre-computes one embedding per movie description only (not the combined
+    Title/Description/Genre/Category text used by build_movie_embeddings).
+    Stored in the index so recommend_movies never has to re-encode the whole
+    dataset's descriptions on every request.
+    """
+    model = get_model()
+    descriptions = df['Description'].fillna('').astype(str).tolist()
+    return model.encode(descriptions, show_progress_bar=True, convert_to_numpy=True)
+
 def build_and_save_movie_index(csv_path: str = None, out_path: str = None) -> Tuple[pd.DataFrame, np.ndarray]:
-    """Build movie index with embeddings and save it."""
+    """Build movie index (full + description embeddings) and save it."""
+    global _INDEX_CACHE
     df = load_movies_df(csv_path)
     embeddings = build_movie_embeddings(df)
-    
+    desc_embeddings = build_description_embeddings(df)
+
     if out_path is None:
         out_path = str(DEFAULT_PICKLE)
-    
+
     p = Path(out_path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("wb") as f:
-        pickle.dump({"model": MODEL_NAME, "df": df, "embeddings": embeddings}, f)
-    
+        pickle.dump({
+            "model": MODEL_NAME,
+            "df": df,
+            "embeddings": embeddings,
+            "desc_embeddings": desc_embeddings,
+        }, f)
+
+    _INDEX_CACHE = {"df": df, "embeddings": embeddings, "desc_embeddings": desc_embeddings}
     return df, embeddings
+
+def _load_index_data(path: str = None) -> dict:
+    """
+    Loads (and caches in-process) the full index dict: df, combined
+    embeddings, and description-only embeddings. Rebuilds the description
+    embeddings once (and re-saves the pkl) if loading an older index that
+    predates this field, so existing pkls upgrade transparently.
+    """
+    global _INDEX_CACHE
+    if _INDEX_CACHE is not None:
+        return _INDEX_CACHE
+
+    p = Path(path) if path else DEFAULT_PICKLE
+    if not p.exists():
+        build_and_save_movie_index(out_path=path)
+        return _INDEX_CACHE
+
+    with p.open("rb") as f:
+        data = pickle.load(f)
+
+    desc_embeddings = data.get("desc_embeddings")
+    if desc_embeddings is None:
+        desc_embeddings = build_description_embeddings(data["df"])
+        data["desc_embeddings"] = desc_embeddings
+        with p.open("wb") as f:
+            pickle.dump(data, f)
+
+    _INDEX_CACHE = {"df": data["df"], "embeddings": data["embeddings"], "desc_embeddings": desc_embeddings}
+    return _INDEX_CACHE
 
 def load_movie_index(path: str = None) -> Tuple[pd.DataFrame, np.ndarray]:
     """Load movie index with embeddings. If missing, build it."""
-    p = Path(path) if path else DEFAULT_PICKLE
-    if not p.exists():
-        return build_and_save_movie_index()
-    with p.open("rb") as f:
-        data = pickle.load(f)
+    data = _load_index_data(path)
     return data["df"], data["embeddings"]
 
 def embed_text(texts: List[str]) -> np.ndarray:
@@ -340,11 +398,14 @@ def recommend_movies(
     """
     # EF4.1: Augment description if too short
     if description and enable_augmentation:
-        description = augment_query_with_gemini(description)
+        description = augment_query_with_openrouter(description)
     
-    # Load index
-    df, embeddings = load_movie_index()
-    
+    # Load index (df, combined embeddings, precomputed description embeddings)
+    index_data = _load_index_data()
+    df = index_data["df"]
+    embeddings = index_data["embeddings"]
+    desc_embeddings = index_data["desc_embeddings"]
+
     # Filter by period if specified
     if period:
         df_filtered = filter_by_period(df, period)
@@ -354,33 +415,32 @@ def recommend_movies(
         # Recalculate indices
         filtered_indices = df_filtered.index.tolist()
         embeddings_filtered = embeddings[filtered_indices]
+        desc_embeddings_filtered = desc_embeddings[filtered_indices]
     else:
         df_filtered = df
         embeddings_filtered = embeddings
-    
+        desc_embeddings_filtered = desc_embeddings
+
     # Build enriched query
     query = build_query_from_criteria(
         description, similar_title,
         action_intensity, narrative_complexity,
         darkness, realism
     )
-    
+
     print(f"[Query] Built query: {query}")
-    
+
     # Encode full query
     q_emb = embed_text([query])
-    
+
     # Calculate full similarities (Title + Description + Genre + Category)
     full_sims = cosine_similarity(q_emb, embeddings_filtered)[0]
-    
-    # Calculate description-specific similarity (batched: one encode call for
-    # all movie descriptions instead of one call per row, so this stays fast
-    # as the dataset grows to tens of thousands of rows)
+
+    # Calculate description-specific similarity using the precomputed
+    # description embeddings (no re-encoding of the dataset at request time)
     if description:
         desc_emb = embed_text([description])
-        movie_descs = df_filtered['Description'].fillna('').astype(str).tolist()
-        movie_desc_embs = embed_text(movie_descs)
-        desc_sims = cosine_similarity(desc_emb, movie_desc_embs)[0]
+        desc_sims = cosine_similarity(desc_emb, desc_embeddings_filtered)[0]
     else:
         # If no description, use uniform similarity
         desc_sims = np.full(len(df_filtered), 0.5)

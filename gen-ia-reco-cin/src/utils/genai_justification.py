@@ -1,9 +1,9 @@
 """
 GenAI module for generating personalized recommendation justification text (EF4.3).
-Calls Gemini once per recommendation set to produce a narrative synthesis
-explaining why the top films match the user's cinematic profile. The prompt is
-grounded in the already-selected top-3 titles (from SBERT scoring) so Gemini
-only comments on them instead of inventing new recommendations (mitigates
+Calls OpenRouter (nvidia/nemotron-3-ultra:free) once per recommendation set to produce
+a narrative synthesis explaining why the top films match the user's cinematic profile.
+The prompt is grounded in the already-selected top-3 titles (from SBERT scoring) so the
+model only comments on them instead of inventing new recommendations (mitigates
 hallucination risk).
 """
 import hashlib
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.services.gemini_service import call_gemini
+from src.services.openrouter_service import call_openrouter
 
 CACHE_FILE = Path(__file__).parent / ".justification_cache.json"
 _CACHE = None
@@ -69,8 +69,10 @@ def _build_prompt(user_preferences: Dict, recommendations: List[Dict],
         f"- Preferred period: \"{user_preferences.get('period', 'any')}\"\n\n"
         f"Top recommended films:\n{titles_block}\n"
         f"{refinement}\n\n"
-        "Write a short, engaging justification (3-5 sentences) explaining why the top film "
-        "fits this profile, briefly mentioning the second choice as an alternative, in English."
+        "Write an engaging justification explaining why the top film fits this profile, "
+        "briefly mentioning the second choice as an alternative, in English. "
+        "STRICT LENGTH LIMIT: between 250 and 300 characters total (including spaces), "
+        "so write 2 tight sentences, not more. Do not mention the character limit itself."
     )
 
 
@@ -80,15 +82,48 @@ def _cache_key(user_preferences: Dict, recommendations: List[Dict]) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+MIN_LENGTH = 250
+MAX_LENGTH = 300
+
+
+def _enforce_length(text: str) -> str:
+    """
+    Hard safety net around the model's own length instruction: LLMs don't
+    always respect an exact character count, so this guarantees the UI never
+    shows an overly long block. Truncates at the last whole word before
+    MAX_LENGTH rather than mid-word.
+    """
+    text = text.strip()
+    if len(text) <= MAX_LENGTH:
+        return text
+    truncated = text[:MAX_LENGTH].rsplit(" ", 1)[0].rstrip(".,;: ")
+    return truncated + "..."
+
+
 def _local_fallback(recommendations: List[Dict]) -> str:
-    """Minimal local fallback used only if Gemini is unavailable."""
+    """
+    Local fallback used only if OpenRouter is unavailable. Kept within the
+    same 250-300 character target as the real GenAI output, mentioning both
+    the top and second recommendation so it stays informative even offline.
+    """
     if not recommendations:
         return ""
     top = recommendations[0]
-    return (
-        f"Based on your preferences, \"{top.get('title', 'this film')}\" is our top match "
-        f"with a {top.get('score', 0):.1%} affinity score."
+    top_genre = str(top.get('genre', '')).split(',')[0].strip() or "film"
+    text = (
+        f"\"{top.get('title', 'This film')}\" ({top.get('year', '?')}) is your top match, "
+        f"a {top_genre.lower()} pick scoring {top.get('score', 0):.1%} against your profile."
     )
+
+    if len(recommendations) >= 2:
+        second = recommendations[1]
+        text += (
+            f" \"{second.get('title', 'Another title')}\" ({second.get('year', '?')}) "
+            f"is a strong alternative at {second.get('score', 0):.1%}, offering a different take "
+            f"within the same preferences."
+        )
+
+    return _enforce_length(text)
 
 
 def generate_recommendation_justification(
@@ -97,7 +132,7 @@ def generate_recommendation_justification(
     priority_elements: List[str] = None
 ) -> Optional[str]:
     """
-    Generate a personalized recommendation justification via Gemini (EF4.3).
+    Generate a personalized recommendation justification via OpenRouter (EF4.3).
     One API call per recommendation set (cached on preferences + top titles).
 
     Args:
@@ -116,7 +151,7 @@ def generate_recommendation_justification(
         key = _cache_key(user_preferences, recommendations)
         prompt = _build_prompt(user_preferences, recommendations, priority_elements)
 
-        justification = call_gemini(
+        justification = call_openrouter(
             prompt=prompt,
             namespace="justification",
             cache=cache,
@@ -125,7 +160,9 @@ def generate_recommendation_justification(
             fallback_fn=lambda: _local_fallback(recommendations),
         )
         save_cache()
-        return justification or _local_fallback(recommendations)
+        if not justification:
+            return _local_fallback(recommendations)
+        return _enforce_length(justification)
     except Exception as e:
         print(f"Error in EF4.3 justification generation: {e}")
         return _local_fallback(recommendations)

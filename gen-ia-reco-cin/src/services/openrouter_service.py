@@ -1,8 +1,8 @@
 """
-Centralized Gemini GenAI service.
-Wraps every call to the Gemini API with caching, latency measurement,
-call logging (for the evaluation dashboard) and a safe local fallback
-when the API key is missing or the request fails.
+Centralized OpenRouter GenAI service.
+Wraps every call to the OpenRouter API (model: nvidia/nemotron-3-ultra:free) with
+caching, latency measurement, call logging (for the evaluation dashboard) and a
+safe local fallback when the API key is missing or the request fails.
 """
 import json
 import os
@@ -10,27 +10,18 @@ import time
 from pathlib import Path
 from typing import Optional
 
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_MODEL = "gemini-2.0-flash"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 DATA_DIR.mkdir(exist_ok=True)
 LOG_FILE = DATA_DIR / "genai_calls_log.jsonl"
-
-_client = None
-
-
-def _get_client():
-    """Lazily create the Gemini client (avoids import/network cost when unused)."""
-    global _client
-    if _client is None and GEMINI_API_KEY:
-        from google import genai
-        _client = genai.Client(api_key=GEMINI_API_KEY)
-    return _client
 
 
 def _log_call(namespace: str, prompt: str, response: str, latency_ms: float,
@@ -39,7 +30,7 @@ def _log_call(namespace: str, prompt: str, response: str, latency_ms: float,
     entry = {
         "timestamp": time.time(),
         "namespace": namespace,
-        "model": GEMINI_MODEL,
+        "model": OPENROUTER_MODEL,
         "prompt": prompt,
         "response": response,
         "latency_ms": latency_ms,
@@ -51,10 +42,10 @@ def _log_call(namespace: str, prompt: str, response: str, latency_ms: float,
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception as e:
-        print(f"[gemini_service] Warning: could not write log: {e}")
+        print(f"[openrouter_service] Warning: could not write log: {e}")
 
 
-def call_gemini(
+def call_openrouter(
     prompt: str,
     namespace: str,
     cache: Optional[dict] = None,
@@ -63,11 +54,11 @@ def call_gemini(
     fallback_fn=None,
 ) -> str:
     """
-    Calls Gemini with the given prompt, using an optional in-memory cache dict
-    (caller owns persistence, e.g. via load_cache()/save_cache()).
+    Calls OpenRouter (nvidia/nemotron-3-ultra:free) with the given prompt, using an
+    optional in-memory cache dict (caller owns persistence, e.g. via load_cache()/save_cache()).
 
     Args:
-        prompt: Full prompt text to send to Gemini.
+        prompt: Full prompt text to send to the model.
         namespace: Logical usage name (e.g. "query_augmentation", "justification"),
             used for logging/evaluation grouping.
         cache: Optional dict used as a cache (key -> response).
@@ -79,28 +70,36 @@ def call_gemini(
             without network access / quota.
 
     Returns:
-        The generated text (from Gemini, cache, or fallback).
+        The generated text (from OpenRouter, cache, or fallback).
     """
     if cache is not None and cache_key is not None and cache_key in cache:
         _log_call(namespace, prompt, cache[cache_key], 0.0, cache_hit=True, fallback=False)
         return cache[cache_key]
 
-    client = _get_client()
-    if client is None:
+    if not OPENROUTER_API_KEY:
         result = fallback_fn() if fallback_fn else ""
         _log_call(namespace, prompt, result, 0.0, cache_hit=False, fallback=True,
-                   error="GEMINI_API_KEY missing")
+                   error="OPENROUTER_API_KEY missing")
         return result
 
     start = time.perf_counter()
     try:
-        from google.genai import types
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(temperature=temperature),
+        response = requests.post(
+            OPENROUTER_API_URL,
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+            },
+            timeout=30,
         )
-        text = (response.text or "").strip()
+        response.raise_for_status()
+        data = response.json()
+        text = (data["choices"][0]["message"]["content"] or "").strip()
         latency_ms = (time.perf_counter() - start) * 1000
 
         if cache is not None and cache_key is not None:
@@ -113,5 +112,5 @@ def call_gemini(
         result = fallback_fn() if fallback_fn else ""
         _log_call(namespace, prompt, result, latency_ms, cache_hit=False, fallback=True,
                    error=str(e))
-        print(f"[gemini_service] Gemini call failed ({namespace}): {e}")
+        print(f"[openrouter_service] OpenRouter call failed ({namespace}): {e}")
         return result

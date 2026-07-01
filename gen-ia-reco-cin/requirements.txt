@@ -12,8 +12,6 @@ streamlit==1.38.0
 plotly==5.24.1
 pyarrow==24.0.0
 
-# GenAI (EF4.1, EF4.3)
-google-genai==0.7.0
 
 # Testing
 pytest==7.4.3

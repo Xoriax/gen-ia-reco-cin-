@@ -84,5 +84,35 @@
     "tmdb_id": 11216,
     "title": "Cinema Paradiso",
     "timestamp": "2026-07-01T17:34:45.791143"
+  },
+  "Justice League Dark_2017": {
+    "poster_path": "/gWcTaDFXDrOAPfVzfBFz0Aya5BE.jpg",
+    "tmdb_id": 408220,
+    "title": "Justice League Dark",
+    "timestamp": "2026-07-01T22:22:39.597872"
+  },
+  "Defendor_2009": {
+    "poster_path": "/a1ce5xYYkwSCqIHh0nGKnh7Zs7Q.jpg",
+    "tmdb_id": 34769,
+    "title": "Defendor",
+    "timestamp": "2026-07-01T22:22:39.984426"
+  },
+  "RoboCop_1987": {
+    "poster_path": "/esmAU0fCO28FbS6bUBKLAzJrohZ.jpg",
+    "tmdb_id": 5548,
+    "title": "RoboCop",
+    "timestamp": "2026-07-01T22:22:40.480345"
+  },
+  "Batman_1989": {
+    "poster_path": "/cij4dd21v2Rk2YtUQbV5kW69WB2.jpg",
+    "tmdb_id": 268,
+    "title": "Batman",
+    "timestamp": "2026-07-01T22:22:40.972081"
+  },
+  "Batman v Superman: Dawn of Justice_2016": {
+    "poster_path": "/5UsK3grJvtQrtzEgqNlDljJW96w.jpg",
+    "tmdb_id": 209112,
+    "title": "Batman v Superman: Dawn of Justice",
+    "timestamp": "2026-07-01T22:22:41.356671"
   }
 }

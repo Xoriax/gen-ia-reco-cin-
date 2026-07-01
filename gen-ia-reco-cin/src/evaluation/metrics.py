@@ -4,8 +4,8 @@ consumed by the Streamlit "Évaluation" tab.
 
 Covers:
 - distribution of final recommendation scores
-- before/after comparison of Gemini query enrichment (EF4.1)
-- Gemini cache hit rate and call latency (from the GenAI call log)
+- before/after comparison of OpenRouter query enrichment (EF4.1)
+- OpenRouter cache hit rate and call latency (from the GenAI call log)
 - genre diversity of the recommended set
 - side-by-side parameter comparison (temperature) for justification prompts
 - a small manual evaluation grid (prompt/response/rating) persisted to CSV
@@ -18,14 +18,14 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.services.gemini_service import call_gemini, LOG_FILE
+from src.services.openrouter_service import call_openrouter, LOG_FILE
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 EVAL_GRID_FILE = DATA_DIR / "genai_eval_grid.csv"
 
 
 def load_genai_log() -> pd.DataFrame:
-    """Loads the Gemini call log (prompt/response/latency/cache/fallback per call)."""
+    """Loads the OpenRouter call log (prompt/response/latency/cache/fallback per call)."""
     if not LOG_FILE.exists():
         return pd.DataFrame(columns=[
             "timestamp", "namespace", "model", "prompt", "response",
@@ -54,7 +54,7 @@ def compute_score_distribution(recommendations: List[Dict]) -> pd.DataFrame:
 
 def compute_before_after_enrichment(recommend_fn, description: str, **kwargs) -> Dict:
     """
-    Runs the same request with and without EF4.1 Gemini enrichment and compares
+    Runs the same request with and without EF4.1 OpenRouter enrichment and compares
     the top result's score, to demonstrate the concrete effect of the GenAI step.
 
     Args:
@@ -78,7 +78,7 @@ def compute_before_after_enrichment(recommend_fn, description: str, **kwargs) ->
 
 
 def compute_cache_hit_rate(log_df: Optional[pd.DataFrame] = None) -> Dict:
-    """Percentage of Gemini calls served from cache vs real API vs fallback."""
+    """Percentage of OpenRouter calls served from cache vs real API vs fallback."""
     df = log_df if log_df is not None else load_genai_log()
     if df.empty:
         return {"total": 0, "cache_hit_pct": 0.0, "fallback_pct": 0.0, "api_pct": 0.0}
@@ -108,7 +108,7 @@ def compute_genre_diversity(recommendations: List[Dict]) -> Dict:
 
 
 def compute_latency_stats(log_df: Optional[pd.DataFrame] = None) -> Dict:
-    """Latency stats (ms) for real Gemini API calls only (excludes cache/fallback)."""
+    """Latency stats (ms) for real OpenRouter API calls only (excludes cache/fallback)."""
     df = log_df if log_df is not None else load_genai_log()
     if df.empty:
         return {"count": 0, "mean_ms": 0.0, "min_ms": 0.0, "max_ms": 0.0}
@@ -127,14 +127,14 @@ def compute_latency_stats(log_df: Optional[pd.DataFrame] = None) -> Dict:
 
 def compute_temperature_comparison(prompt: str) -> Dict:
     """
-    Runs the same prompt with two different Gemini temperatures to demonstrate
+    Runs the same prompt with two different OpenRouter temperatures to demonstrate
     a concrete before/after parameter adjustment (grading grid requirement).
     Bypasses the cache on purpose so both calls actually hit the API.
     """
-    low = call_gemini(prompt=prompt, namespace="temperature_comparison_low",
-                       temperature=0.2, fallback_fn=lambda: "[fallback] no API key configured")
-    high = call_gemini(prompt=prompt, namespace="temperature_comparison_high",
-                        temperature=0.9, fallback_fn=lambda: "[fallback] no API key configured")
+    low = call_openrouter(prompt=prompt, namespace="temperature_comparison_low",
+                           temperature=0.2, fallback_fn=lambda: "[fallback] no API key configured")
+    high = call_openrouter(prompt=prompt, namespace="temperature_comparison_high",
+                            temperature=0.9, fallback_fn=lambda: "[fallback] no API key configured")
     return {
         "temperature_0_2": {"text": low, "length": len(low.split())},
         "temperature_0_9": {"text": high, "length": len(high.split())},

@@ -7,10 +7,10 @@ Système de recommandation intelligent de films et séries TV utilisant l'IA gé
 ### Points Forts
 
 - **Recherche Sémantique Avancée** : Utilise SentenceTransformers pour comprendre le sens des requêtes en langage naturel
-- **Enrichissement par IA Générative (Gemini)** : Les requêtes courtes sont enrichies par un vrai appel à Gemini (EF4.1), pas par un mapping statique
+- **Enrichissement par IA Générative (OpenRouter)** : Les requêtes courtes sont enrichies par un vrai appel à OpenRouter (EF4.1), pas par un mapping statique
 - **Interface Streamlit** : Questionnaire interactif + dashboard d'évaluation dans une seule application Python
 - **Affiches TMDB** : Intégration automatique des posters de films via l'API TMDB
-- **Justifications IA (Gemini)** : Explications personnalisées générées par Gemini pour chaque recommandation (EF4.3)
+- **Justifications IA (OpenRouter)** : Explications personnalisées générées par OpenRouter pour chaque recommandation (EF4.3)
 - **Évaluation des résultats générés** : Dashboard dédié (scores, avant/après, cache, latence, limites/risques)
 - **Performance** : Cache local par usage (query, justification) et embeddings pré-calculés pour des réponses rapides
 
@@ -26,7 +26,7 @@ Décrivez en langage naturel le type de film recherché. Le système comprend de
 - *"comédie romantique légère et drôle"*
 - *"thriller psychologique sombre et complexe"*
 
-**Fonctionnalité EF4.1** : Les requêtes courtes (< 5 mots) sont automatiquement enrichies via un appel à l'API Gemini (avec cache et fallback local si la clé API est absente) pour améliorer la précision des résultats.
+**Fonctionnalité EF4.1** : Les requêtes courtes (< 5 mots) sont automatiquement enrichies via un appel à l'API OpenRouter (avec cache et fallback local si la clé API est absente) pour améliorer la précision des résultats.
 
 #### 2. Preuve Contextuelle (Titre Similaire)
 Donnez un titre de film que vous avez aimé pour trouver des films similaires. Le système utilise la recherche sémantique pour identifier des œuvres comparables par leur thématique, ambiance et style narratif.
@@ -66,8 +66,8 @@ Sélectionnez une période spécifique :
 | **EF2.3** | Similarité Cosinus | Mesure mathématique de proximité sémantique |
 | **EF3.1** | Score Pondéré | Formule combinant similarité sémantique et pondérations Likert |
 | **EF3.2** | Top K Recommandations | Extraction des 5 meilleurs résultats |
-| **EF4.1** | Enrichissement Requêtes | Expansion des requêtes courtes via l'API Gemini |
-| **EF4.3** | Justifications GenAI | Synthèse narrative générée par Gemini, ancrée sur le top 3 SBERT |
+| **EF4.1** | Enrichissement Requêtes | Expansion des requêtes courtes via l'API OpenRouter |
+| **EF4.3** | Justifications GenAI | Synthèse narrative générée par OpenRouter, ancrée sur le top 3 SBERT |
 | **C5.3** | Évaluation des résultats générés | Dashboard Streamlit : scores, avant/après, cache, latence, limites |
 
 ---
@@ -110,13 +110,13 @@ Copiez `.env.example` vers `.env` à la racine du projet et complétez :
 
 ```env
 TMDB_API_KEY=votre_cle_api_tmdb
-GEMINI_API_KEY=votre_cle_api_gemini
+OPENROUTER_API_KEY=votre_cle_api_openrouter
 ```
 
 - Clé TMDB (optionnelle, pour les posters) : [TMDB](https://www.themoviedb.org/settings/api)
-- Clé Gemini (requise pour l'enrichissement EF4.1 et les justifications EF4.3) : [Google AI Studio](https://aistudio.google.com/)
+- Clé OpenRouter (requise pour l'enrichissement EF4.1 et les justifications EF4.3) : [OpenRouter](https://openrouter.ai/keys)
 
-Sans `GEMINI_API_KEY`, l'application fonctionne toujours (fallback local automatique) mais sans les appels GenAI réels. Voir le dashboard Évaluation pour vérifier si les appels partent bien vers l'API ou tombent en fallback.
+Sans `OPENROUTER_API_KEY`, l'application fonctionne toujours (fallback local automatique) mais sans les appels GenAI réels. Voir le dashboard Évaluation pour vérifier si les appels partent bien vers l'API ou tombent en fallback.
 
 ---
 
@@ -135,10 +135,10 @@ Ouvrez votre navigateur à l'adresse indiquée par Streamlit (par défaut **http
 
 **Onglet Recommandation :**
 - Questionnaire hybride (texte libre, titre similaire, sliders Likert, période)
-- Résultats avec posters, scores et justification Gemini
+- Résultats avec posters, scores et justification OpenRouter
 
 **Onglet Évaluation :**
-- Distribution des scores, comparaison avant/après enrichissement Gemini
+- Distribution des scores, comparaison avant/après enrichissement OpenRouter
 - Comparaison de réglages (température), cache hit rate, latence
 - Grille d'évaluation manuelle des générations, limites & risques identifiés
 
@@ -236,7 +236,7 @@ gen-ia-reco-cin/
 │   │   ├── movies.parquet              # Même base de données, format Parquet
 │   │   ├── referentiel_movies.pkl      # Index avec embeddings pré-calculés
 │   │   ├── referentiel_blockid.pkl     # Index des BlockID
-│   │   ├── genai_calls_log.jsonl       # Log des appels Gemini (preuve pour évaluation)
+│   │   ├── genai_calls_log.jsonl       # Log des appels OpenRouter (preuve pour évaluation)
 │   │   └── genai_eval_grid.csv         # Grille d'évaluation manuelle (générée à l'usage)
 │   │
 │   ├── recommender/
@@ -245,12 +245,12 @@ gen-ia-reco-cin/
 │   ├── services/
 │   │   ├── ref.py                      # Service de référentiel BlockID
 │   │   ├── tmdb_service.py             # Intégration API TMDB (posters)
-│   │   └── gemini_service.py           # Appel Gemini centralisé (cache, log, fallback)
+│   │   └── openrouter_service.py           # Appel OpenRouter centralisé (cache, log, fallback)
 │   │
 │   ├── utils/
-│   │   ├── query_augmentation.py       # Enrichissement via Gemini (EF4.1)
+│   │   ├── query_augmentation.py       # Enrichissement via OpenRouter (EF4.1)
 │   │   ├── semantic_search.py          # Recherche sémantique locale
-│   │   └── genai_justification.py      # Justifications via Gemini (EF4.3)
+│   │   └── genai_justification.py      # Justifications via OpenRouter (EF4.3)
 │   │
 │   └── evaluation/
 │       └── metrics.py                  # Métriques et comparaisons pour le dashboard (C5.3)
@@ -277,7 +277,7 @@ gen-ia-reco-cin/
 | **pandas** | 2.1.3 | Manipulation de données |
 | **numpy** | 1.24.3 | Calculs numériques |
 | **PyTorch** | 2.1.1 | Backend pour transformers |
-| **google-genai** | 0.7.0 | SDK officiel Gemini (EF4.1, EF4.3) |
+| **requests** | 2.31.0 | Client HTTP pour OpenRouter (EF4.1, EF4.3) |
 
 ### Frontend & Évaluation
 
@@ -446,7 +446,7 @@ Pour toute question ou problème :
 - [SentenceTransformers Documentation](https://www.sbert.net/)
 - [TMDB API Documentation](https://developers.themoviedb.org/3)
 - [Streamlit Documentation](https://docs.streamlit.io/)
-- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs)
+- [OpenRouter API Documentation](https://openrouter.ai/docs)
 - [scikit-learn Documentation](https://scikit-learn.org/)
 
 ---
@@ -479,7 +479,7 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 - Base de données : 12 000+ films/TV shows
 - Précision : Embeddings 384 dimensions
 - Mémoire : index d'embeddings ~23 Mo (12k lignes x 384 dimensions)
-- Latence Gemini (EF4.1/EF4.3) : voir dashboard Évaluation (mesurée en direct par appel)
+- Latence OpenRouter (EF4.1/EF4.3) : voir dashboard Évaluation (mesurée en direct par appel)
 
 ---
 
@@ -488,30 +488,30 @@ Likert: Action=4, Complexité=4, Noirceur=5, Réalisme=2
 Cette section reprend la structure conseillée par la grille de notation "Projet 3 : IA Générative" (C5.1-C5.3), pour servir de base au support de présentation.
 
 ### Cas d'usage
-1. **Enrichissement de requête (EF4.1)** : quand l'utilisateur saisit une description trop courte (< 5 mots, ex. "action"), le système manque de signal sémantique pour un bon matching SBERT. Gemini reformule la requête en une phrase riche en mots-clés cinématographiques (genre, ambiance, ton), utilisée ensuite pour l'embedding.
-2. **Justification de recommandation (EF4.3)** : une fois le top 3 sélectionné par le scoring SBERT, Gemini rédige une synthèse narrative qui explique pourquoi ces films correspondent au profil Likert/texte libre de l'utilisateur, apportant une valeur pédagogique et UX sans jamais influencer le choix des films eux-mêmes.
+1. **Enrichissement de requête (EF4.1)** : quand l'utilisateur saisit une description trop courte (< 5 mots, ex. "action"), le système manque de signal sémantique pour un bon matching SBERT. OpenRouter reformule la requête en une phrase riche en mots-clés cinématographiques (genre, ambiance, ton), utilisée ensuite pour l'embedding.
+2. **Justification de recommandation (EF4.3)** : une fois le top 3 sélectionné par le scoring SBERT, OpenRouter rédige une synthèse narrative qui explique pourquoi ces films correspondent au profil Likert/texte libre de l'utilisateur, apportant une valeur pédagogique et UX sans jamais influencer le choix des films eux-mêmes.
 
 ### Choix du modèle et de l'approche
-- **Modèle** : `gemini-2.0-flash` (rapide, faible coût, adapté à un usage limité à 1 appel par sortie).
-- **Grounding** : le prompt de justification liste explicitement les films déjà sélectionnés par SBERT. Gemini commente, il ne recommande pas, ce qui réduit le risque d'hallucination.
+- **Modèle** : `nvidia/nemotron-3-ultra-550b-a55b:free` (via OpenRouter, gratuit, adapté à un usage limité à 1 appel par sortie).
+- **Grounding** : le prompt de justification liste explicitement les films déjà sélectionnés par SBERT. OpenRouter commente, il ne recommande pas, ce qui réduit le risque d'hallucination.
 - **Sobriété** : cache local par usage (`.query_cache.json`, `.justification_cache.json`) + fallback local automatique si la clé API est absente ou l'appel échoue, pour respecter la contrainte "une seule requête API par type de sortie" et ne jamais bloquer la démo.
 
 ### Solution développée
-- `src/services/gemini_service.py` centralise tous les appels (cache, mesure de latence, log JSONL, fallback).
+- `src/services/openrouter_service.py` centralise tous les appels (cache, mesure de latence, log JSONL, fallback).
 - `src/utils/query_augmentation.py` (EF4.1) et `src/utils/genai_justification.py` (EF4.3) construisent les prompts et consomment ce service.
 - Chaque appel (prompt, réponse, latence, cache hit, fallback) est journalisé dans `src/data/genai_calls_log.jsonl`, source de données du dashboard d'évaluation.
 
 ### Évaluation des résultats
 Dashboard Streamlit (onglet "Évaluation") :
 - distribution des scores de la recommandation courante ;
-- comparaison **avant/après** activation de l'enrichissement Gemini (delta de score sur le top résultat) ;
+- comparaison **avant/après** activation de l'enrichissement OpenRouter (delta de score sur le top résultat) ;
 - comparaison de **réglages** (température 0.2 vs 0.9) sur un même prompt, avec longueur/latence des deux réponses ;
 - taux de cache hit vs appels API réels vs fallback, et statistiques de latence ;
 - grille d'évaluation manuelle (prompt/réponse/note 1-5) sur les dernières générations réelles ;
 - section **Limites & risques** : hallucination (mitigée par le grounding), dépendance/coût API, latence, biais du modèle, absence de garantie factuelle sur le texte généré.
 
 ### Valeur métier
-L'enrichissement et la justification GenAI transforment un moteur de similarité "boîte noire" en système explicable : l'utilisateur comprend *pourquoi* un film lui est proposé, et une requête vague ("un truc sombre") produit quand même un résultat pertinent grâce à la reformulation Gemini. Ce sont deux leviers directs d'adoption et de confiance pour un produit de recommandation grand public.
+L'enrichissement et la justification GenAI transforment un moteur de similarité "boîte noire" en système explicable : l'utilisateur comprend *pourquoi* un film lui est proposé, et une requête vague ("un truc sombre") produit quand même un résultat pertinent grâce à la reformulation OpenRouter. Ce sont deux leviers directs d'adoption et de confiance pour un produit de recommandation grand public.
 
 ---
 
@@ -523,8 +523,8 @@ L'enrichissement et la justification GenAI transforment un moteur de similarité
 | **EF2.3** | OK | Mesure de similarité cosinus |
 | **EF3.1** | OK | Formule de score pondérée |
 | **EF3.2** | OK | Top 3-5 recommandations |
-| **EF4.1** | OK | Enrichissement de requête via un vrai appel API Gemini (plus de mapping statique) |
-| **EF4.3** | OK | Justification générée par Gemini, ancrée sur le top 3 SBERT |
+| **EF4.1** | OK | Enrichissement de requête via un vrai appel API OpenRouter (plus de mapping statique) |
+| **EF4.3** | OK | Justification générée par OpenRouter, ancrée sur le top 3 SBERT |
 | **C5.3** | OK | Dashboard d'évaluation des résultats générés (scores, avant/après, cache, latence, limites) |
 | **Titres spécifiques** | OK | Recommandations de films/shows réels |
 | **Description libre** | OK | Analyse de texte naturel |
