@@ -132,6 +132,13 @@ def _load_index_data(path: str = None) -> dict:
     with p.open("rb") as f:
         data = pickle.load(f)
 
+    if 'Description' not in data["df"].columns:
+        # Stale index built from an older CSV schema (missing columns);
+        # rebuild the whole index from the current source data instead of
+        # patching desc_embeddings onto the outdated df.
+        build_and_save_movie_index(out_path=path)
+        return _INDEX_CACHE
+
     desc_embeddings = data.get("desc_embeddings")
     if desc_embeddings is None:
         desc_embeddings = build_description_embeddings(data["df"])
